@@ -269,8 +269,12 @@ const DEMO_CRM = [
   { name: "Carlos Diaz", email: "carlos.diaz@email.es", phone: "+34 6 55 12 30 21", visits: 1, spent: 145, last: "Séjour du 27/06", tag: "Nouveau" },
 ];
 
-/* URL du portail chambre (respecte le base path) */
+/* URL du portail chambre (respecte le base path).
+   VITE_HASH_ROUTING=1 bascule en liens #/r/… pour les hébergeurs
+   statiques sans fallback SPA (un seul fichier HTML). */
+const HASH_ROUTING = !!import.meta.env.VITE_HASH_ROUTING;
 const roomPortalPath = (room) => {
+  if (HASH_ROUTING) return `${window.location.pathname}#/r/${DEMO_HOTEL.slug}/t/${room}`;
   const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
   return `${base}/r/${DEMO_HOTEL.slug}/t/${room}`;
 };
@@ -2381,6 +2385,8 @@ function Shell() {
 }
 
 function parseRoute() {
+  const h = window.location.hash.match(/^#\/r\/[^/]+\/t\/(\d+)/);
+  if (h) return { view: "portal", room: Number(h[1]) };
   const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
   let path = window.location.pathname;
   if (base && path.startsWith(base)) path = path.slice(base.length);
@@ -2394,7 +2400,11 @@ export default function App() {
   useEffect(() => {
     const on = () => setRoute(parseRoute());
     window.addEventListener("popstate", on);
-    return () => window.removeEventListener("popstate", on);
+    window.addEventListener("hashchange", on);
+    return () => {
+      window.removeEventListener("popstate", on);
+      window.removeEventListener("hashchange", on);
+    };
   }, []);
   return (
     <ToastProvider>
