@@ -118,7 +118,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const fmtEuro = (n) => (Math.round(n * 100) / 100).toFixed(2).replace(".", ",") + " €";
 
 const nowTime = () =>
-  new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", ":");
+  new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 
 const toISO = (d) => {
   const p = (x) => String(x).padStart(2, "0");
@@ -153,6 +153,8 @@ const KEY_CHECKINS = "wgm_demo_checkins";
 const KEY_STAFF_RESAS = "wgm_demo_staff_resas";
 const KEY_ORDERS = "wgm_demo_orders";
 const KEY_REQUESTS = "wgm_demo_requests";
+const KEY_MENU = "wgm_demo_menu";
+const KEY_HOTEL = "wgm_demo_hotel";
 
 const readLS = (key, fallback) => {
   try {
@@ -169,6 +171,11 @@ const writeLS = (key, val) => {
     localStorage.setItem(key, JSON.stringify(val));
   } catch {}
 };
+
+/* La carte et l'identité de l'hôtel sont éditables côté réception et
+   persistées : le portail client reflète les modifications. */
+const readMenu = () => readLS(KEY_MENU, DEMO_HOTEL_MENU);
+const readHotelProfile = () => ({ ...DEMO_HOTEL, ...readLS(KEY_HOTEL, {}) });
 
 const readGuestCheckins = () => readLS(KEY_CHECKINS, []);
 const writeGuestCheckins = (list) => writeLS(KEY_CHECKINS, list);
@@ -535,6 +542,26 @@ function SectionTitle({ children, style }) {
   );
 }
 
+/* Styles globaux : transitions, apparitions de vues, accessibilité clavier */
+function GlobalStyles() {
+  return (
+    <style>{`
+      @keyframes wgmFadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+      .wgm-view { animation: wgmFadeUp .28s ease both; }
+      button { transition: transform .12s ease, opacity .15s ease, box-shadow .15s ease, background .15s ease; }
+      button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+        outline: 2px solid #0A84FF; outline-offset: 2px;
+      }
+      .wgm-tile { transition: transform .15s ease, box-shadow .15s ease; }
+      .wgm-tile:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0,0,0,.09); }
+      .wgm-tile:active { transform: scale(.98); }
+      @media (prefers-reduced-motion: reduce) {
+        * { animation: none !important; transition: none !important; }
+      }
+    `}</style>
+  );
+}
+
 /* Bip Web Audio pour l'Office (nouvelles commandes) */
 function playBeep() {
   try {
@@ -559,6 +586,7 @@ function playBeep() {
    ========================================================================== */
 
 function PortalHeader({ room, title, onBack }) {
+  const hotel = readHotelProfile();
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
       <button
@@ -574,7 +602,7 @@ function PortalHeader({ room, title, onBack }) {
       <div>
         <div style={{ ...FF, fontSize: 17, fontWeight: 800, color: C.text }}>{title}</div>
         <div style={{ ...FF, fontSize: 12.5, color: C.textSecondary }}>
-          {DEMO_HOTEL.logo_emoji} {DEMO_HOTEL.name} · Chambre {room}
+          {hotel.logo_emoji} {hotel.name} · Chambre {room}
         </div>
       </div>
     </div>
@@ -637,7 +665,7 @@ function RoomPortal({ room }) {
 
   return (
     <div style={{ ...FF, minHeight: "100vh", background: C.bg }}>
-      <div style={{ maxWidth: 560, margin: "0 auto", padding: "18px 16px 140px" }}>
+      <div key={view} className="wgm-view" style={{ maxWidth: 560, margin: "0 auto", padding: "18px 16px 140px" }}>
         {view === "hub" && <PortalHub {...common} justLeft={justLeft} />}
         {view === "checkin" && <CheckinWizard {...common} />}
         {view === "service" && <RoomServiceView {...common} />}
@@ -655,6 +683,7 @@ function RoomPortal({ room }) {
 /* ------- Hub d'accueil ------- */
 
 function PortalHub({ room, active, justLeft, orders, requests, setView }) {
+  const hotel = readHotelProfile();
   const firstName = active ? (active.guest_name || "").split(" ")[0] : "";
   const heroMsg = justLeft
     ? "Chambre libérée — merci pour votre séjour ! 👋"
@@ -696,12 +725,12 @@ function PortalHub({ room, active, justLeft, orders, requests, setView }) {
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div style={{ fontSize: 34 }}>{DEMO_HOTEL.logo_emoji}</div>
+          <div style={{ fontSize: 34 }}>{hotel.logo_emoji}</div>
           <span style={{ ...FF, background: "rgba(255,255,255,0.14)", borderRadius: 999, padding: "5px 12px", fontSize: 12.5, fontWeight: 700 }}>
             Chambre {room}
           </span>
         </div>
-        <div style={{ ...FF, fontSize: 21, fontWeight: 800, marginTop: 12 }}>{DEMO_HOTEL.name}</div>
+        <div style={{ ...FF, fontSize: 21, fontWeight: 800, marginTop: 12 }}>{hotel.name}</div>
         <div style={{ ...FF, fontSize: 14, opacity: 0.75, marginTop: 5, lineHeight: 1.45 }}>{heroMsg}</div>
         {active && active.access_code && !active.express_checkout && (
           <div style={{ ...FF, fontSize: 12.5, opacity: 0.6, marginTop: 8 }}>
@@ -715,6 +744,7 @@ function PortalHub({ room, active, justLeft, orders, requests, setView }) {
         {tiles.map((t) => (
           <div
             key={t.key}
+            className="wgm-tile"
             onClick={() => setView(t.view)}
             style={{
               gridColumn: t.big ? "1 / -1" : undefined,
@@ -1020,7 +1050,7 @@ function CheckinWizard({ room, back, toast }) {
 
 function RoomServiceView({ room, active, orders, placeOrder, toast, back }) {
   const [cart, setCart] = useState({});
-  const menu = DEMO_HOTEL_MENU;
+  const menu = useMemo(readMenu, []);
   const categories = [...new Set(menu.map((m) => m.category))];
   const cartItems = menu.filter((m) => cart[m.id] > 0);
   const total = cartItems.reduce((s, m) => s + m.price * cart[m.id], 0);
@@ -1171,9 +1201,27 @@ function BreakfastView({ room, active, orders, placeOrder, toast, back }) {
       {scheduled.length > 0 && (
         <Surface style={{ marginBottom: 16, border: `1px solid ${C.accentGreen}55`, background: C.accentGreen + "0D" }}>
           {scheduled.map((o) => (
-            <div key={o.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "6px 0" }}>
+            <div key={o.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "6px 0", flexWrap: "wrap" }}>
               <div style={{ ...FF, fontSize: 14, fontWeight: 700, color: C.text }}>🥐 {o.label} · {fmtEuro(o.total)}</div>
-              <Tag color={C.accentGreen}>Programmé · {o.slot} ⏰</Tag>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                <Tag color={o.status === "done" ? C.textTertiary : C.accentGreen}>
+                  {o.status === "done" ? "Livré ✓" : `Programmé · ${o.slot} ⏰`}
+                </Tag>
+                {o.status === "scheduled" && (
+                  <button
+                    onClick={() => {
+                      writeGuestOrders(readGuestOrders().filter((x) => x.id !== o.id));
+                      toast.info("Petit-déjeuner annulé");
+                    }}
+                    style={{
+                      ...FF, border: `1px solid ${C.border}`, background: C.surface, borderRadius: 999,
+                      padding: "3px 10px", fontSize: 12, fontWeight: 700, cursor: "pointer", color: C.accent,
+                    }}
+                  >
+                    Annuler
+                  </button>
+                )}
+              </span>
             </div>
           ))}
         </Surface>
@@ -1642,8 +1690,20 @@ function Dashboard({ onExit }) {
 
   const [seedOrders, setSeedOrders] = useState(seedTodayOrders);
   const [seeds, setSeeds] = useState(seedCheckins);
-  const [menu, setMenu] = useState(DEMO_HOTEL_MENU);
-  const [hotel, setHotel] = useState({ ...DEMO_HOTEL });
+  const [menu, setMenuState] = useState(readMenu);
+  const [hotel, setHotelState] = useState(readHotelProfile);
+  const setMenu = (updater) =>
+    setMenuState((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      writeLS(KEY_MENU, next);
+      return next;
+    });
+  const setHotel = (updater) =>
+    setHotelState((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      writeLS(KEY_HOTEL, next);
+      return next;
+    });
 
   /* eslint-disable react-hooks/exhaustive-deps */
   const orders = useMemo(() => {
@@ -1691,16 +1751,21 @@ function Dashboard({ onExit }) {
     toast.success(`Réservation créée — ${form.guest_name}, ch. ${form.room} ✓`);
   };
 
+  const newOrdersCount = orders.filter((o) => o.status === "pending").length;
+  const checkinTodo =
+    board.filter((e) => e.status === "arriving").length +
+    board.filter((e) => e.status === "departing").length;
+
   const tabs = [
-    ["overview", "📊", "Vue d'ensemble"],
-    ["orders", "🧾", "Room service"],
-    ["checkin", "🛎️", "Check-in"],
-    ["billing", "💶", "Facturation"],
-    ["qr", "🔳", "QR Chambres"],
-    ["inventory", "📦", "Inventaire"],
-    ["menu", "🍽️", "Carte room service"],
-    ["crm", "👥", "CRM"],
-    ["settings", "⚙️", "Paramètres"],
+    ["overview", "📊", "Vue d'ensemble", 0],
+    ["orders", "🧾", "Room service", newOrdersCount],
+    ["checkin", "🛎️", "Check-in", checkinTodo],
+    ["billing", "💶", "Facturation", 0],
+    ["qr", "🔳", "QR Chambres", 0],
+    ["inventory", "📦", "Inventaire", 0],
+    ["menu", "🍽️", "Carte room service", 0],
+    ["crm", "👥", "CRM", 0],
+    ["settings", "⚙️", "Paramètres", 0],
   ];
 
   if (office) {
@@ -1725,7 +1790,7 @@ function Dashboard({ onExit }) {
         </div>
       </div>
       <div style={{ flex: 1, overflowY: "auto" }}>
-        {tabs.map(([id, emoji, label]) => (
+        {tabs.map(([id, emoji, label, badge]) => (
           <button
             key={id}
             onClick={() => { setTab(id); setDrawer(false); }}
@@ -1737,7 +1802,19 @@ function Dashboard({ onExit }) {
               fontSize: 13.5, fontWeight: 700, marginBottom: 2, textAlign: "left",
             }}
           >
-            <span style={{ fontSize: 16 }}>{emoji}</span> {label}
+            <span style={{ fontSize: 16 }}>{emoji}</span>
+            <span style={{ flex: 1 }}>{label}</span>
+            {badge > 0 && (
+              <span
+                style={{
+                  ...FF, background: C.accent, color: C.white, borderRadius: 999,
+                  minWidth: 19, height: 19, padding: "0 5px", fontSize: 11, fontWeight: 800,
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                }}
+              >
+                {badge}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -1762,6 +1839,7 @@ function Dashboard({ onExit }) {
             ☰ Menu
           </button>
         )}
+        <div key={tab} className="wgm-view">
         {tab === "overview" && <OverviewTab orders={orders} board={board} />}
         {tab === "orders" && <OrdersTab orders={orders} advanceOrder={advanceOrder} />}
         {tab === "checkin" && <CheckinBoardTab board={board} setCheckinStatus={setCheckinStatus} addReservation={addReservation} />}
@@ -1771,6 +1849,7 @@ function Dashboard({ onExit }) {
         {tab === "menu" && <MenuTab menu={menu} setMenu={setMenu} toast={toast} />}
         {tab === "crm" && <CRMTab board={board} />}
         {tab === "settings" && <SettingsTab hotel={hotel} setHotel={setHotel} toast={toast} />}
+        </div>
       </div>
     </div>
   );
@@ -1803,9 +1882,20 @@ function OverviewTab({ orders, board }) {
       right: e.access_code, at: "",
     })),
   ];
+  const expressPending = board.filter((e) => e.express_checkout && e.status !== "checked_out");
   return (
     <div>
       <PageTitle>📊 Vue d'ensemble</PageTitle>
+      {expressPending.length > 0 && (
+        <Surface style={{ marginBottom: 14, border: `1px solid ${C.accentOrange}66`, background: C.accentOrange + "0D" }}>
+          <div style={{ ...FF, fontWeight: 800, fontSize: 14.5, color: C.accentOrange }}>
+            🧳 {expressPending.length} check-out express à contrôler
+          </div>
+          <div style={{ ...FF, fontSize: 13, color: C.textSecondary, marginTop: 4 }}>
+            {expressPending.map((e) => `Ch. ${e.room} (${e.guest_name} · ${fmtEuro(e.bill_total || 0)})`).join(" · ")} — vérifier la chambre puis confirmer dans l'onglet Check-in.
+          </div>
+        </Surface>
+      )}
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
         <KPICard label="CA du jour" value={fmtEuro(revenue)} sub="Room service + petit-déjeuner" color={C.accentGreen} />
         <KPICard label="Commandes room service" value={count} sub="Aujourd'hui" />
@@ -1830,11 +1920,49 @@ function OverviewTab({ orders, board }) {
 /* ------- Room service (commandes) ------- */
 
 function OrdersTab({ orders, advanceOrder }) {
+  const [filter, setFilter] = useState("all");
+  const counts = {
+    all: orders.length,
+    pending: orders.filter((o) => o.status === "pending").length,
+    preparing: orders.filter((o) => o.status === "preparing").length,
+    ready: orders.filter((o) => o.status === "ready" || o.status === "scheduled").length,
+    done: orders.filter((o) => o.status === "done").length,
+  };
+  const filters = [
+    ["all", "Toutes", C.dark],
+    ["pending", "Nouvelles", C.accentBlue],
+    ["preparing", "En préparation", C.accentOrange],
+    ["ready", "Prêtes", C.accentGreen],
+    ["done", "Livrées", C.textTertiary],
+  ];
+  const shown = orders.filter((o) =>
+    filter === "all" ? true : filter === "ready" ? o.status === "ready" || o.status === "scheduled" : o.status === filter
+  );
   return (
     <div>
       <PageTitle>🧾 Room service</PageTitle>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+        {filters.map(([id, label, color]) => (
+          <button
+            key={id}
+            onClick={() => setFilter(id)}
+            style={{
+              ...FF, border: `1px solid ${filter === id ? "transparent" : C.border}`, borderRadius: 999,
+              padding: "7px 14px", fontSize: 13, fontWeight: 800, cursor: "pointer",
+              background: filter === id ? color : C.surface, color: filter === id ? C.white : C.textSecondary,
+            }}
+          >
+            {label} · {counts[id]}
+          </button>
+        ))}
+      </div>
       <div style={{ display: "grid", gap: 12 }}>
-        {orders.map((o) => {
+        {shown.length === 0 && (
+          <Surface style={{ textAlign: "center", color: C.textTertiary, ...FF, fontSize: 14 }}>
+            Aucune commande dans cette catégorie.
+          </Surface>
+        )}
+        {shown.map((o) => {
           const meta = ORDER_STATUS_STAFF[o.status] || ORDER_STATUS_STAFF.pending;
           return (
             <Surface key={o.id} style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
@@ -2244,10 +2372,11 @@ function CRMTab({ board }) {
 function SettingsTab({ hotel, setHotel, toast }) {
   const [f, setF] = useState({ name: hotel.name, address: hotel.address, logo_emoji: hotel.logo_emoji });
   const reset = () => {
-    [KEY_CHECKINS, KEY_STAFF_RESAS, KEY_ORDERS, KEY_REQUESTS].forEach((k) => {
+    [KEY_CHECKINS, KEY_STAFF_RESAS, KEY_ORDERS, KEY_REQUESTS, KEY_MENU, KEY_HOTEL].forEach((k) => {
       try { localStorage.removeItem(k); } catch {}
     });
     toast.success("Données de démo réinitialisées ✓");
+    setTimeout(() => window.location.reload(), 900);
   };
   return (
     <div>
@@ -2350,29 +2479,153 @@ function OfficeView({ orders, advanceOrder, onClose }) {
    ========================================================================== */
 
 function Landing({ onDemo }) {
-  const features = ["Room service par QR code", "Check-in en ligne", "Facturation sur la chambre", "CRM clients", "Support 7j/7"];
+  const steps = [
+    { emoji: "🔳", title: "Collez le QR sur la porte", desc: "Un QR par chambre, généré et téléchargé depuis votre dashboard. Aucun matériel, aucune application." },
+    { emoji: "📱", title: "Le client scanne", desc: "Il arrive sur le portail de sa chambre : check-in en ligne, room service, petit-déjeuner, conciergerie." },
+    { emoji: "🛎️", title: "La réception reçoit tout", desc: "Check-ins, commandes et demandes apparaissent en direct sur le board — avec la facturation sur la chambre." },
+  ];
+  const features = [
+    { emoji: "🍽️", title: "Room service par QR", desc: "Carte 24h/24, paiement sur la note de chambre, suivi de statut en direct." },
+    { emoji: "🛎️", title: "Check-in en ligne", desc: "4 étapes, pièce d'identité et signature — le client évite la file à la réception." },
+    { emoji: "🥐", title: "Petit-déj en chambre", desc: "Formules, créneaux par demi-heure et supplément plateau facturés automatiquement." },
+    { emoji: "🧳", title: "Check-out express", desc: "Note de chambre détaillée, late check-out, bagagerie et facture par email." },
+    { emoji: "💬", title: "Conciergerie", desc: "Demandes 1-tap (serviettes, réveil, taxi…) transmises instantanément à la réception." },
+    { emoji: "💶", title: "Caisse & CRM", desc: "Encaissements du jour, export CSV et historique clients au même endroit." },
+  ];
+  const miniTiles = [
+    ["🛎️", "Check-in"], ["🍽️", "Room service"], ["🥐", "Petit-déj"], ["💬", "Conciergerie"],
+  ];
+  const openPortal = () => window.open(roomPortalPath(204), "_blank");
+
   return (
-    <div style={{ ...FF, minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px", textAlign: "center" }}>
-      <div style={{ fontSize: 54 }}>{DEMO_HOTEL.logo_emoji}</div>
-      <div style={{ ...FF, marginTop: 14 }}>
-        <Tag color={C.accent}>WEGEMO HÔTEL</Tag>
+    <div style={{ ...FF, minHeight: "100vh", background: C.bg }}>
+      {/* Nav */}
+      <div style={{ maxWidth: 1060, margin: "0 auto", padding: "18px 22px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 24 }}>{DEMO_HOTEL.logo_emoji}</span>
+          <span style={{ ...FF, fontWeight: 900, fontSize: 16, letterSpacing: 0.3 }}>WEGEMO <span style={{ color: C.accent }}>HÔTEL</span></span>
+        </div>
+        <Btn variant="subtle" size="sm" onClick={onDemo}>Voir la démo</Btn>
       </div>
-      <h1 style={{ ...FF, fontSize: "clamp(30px, 6vw, 48px)", fontWeight: 900, color: C.text, marginTop: 16, letterSpacing: -1, maxWidth: 640, lineHeight: 1.1 }}>
-        L'hôtel, réinventé par le QR code.
-      </h1>
-      <p style={{ ...FF, fontSize: 16.5, color: C.textSecondary, marginTop: 14, maxWidth: 520, lineHeight: 1.6 }}>
-        Room service, check-in en ligne et conciergerie — le tout depuis un QR code collé sur la porte de chaque chambre. Sans application à installer.
-      </p>
-      <div style={{ marginTop: 26 }}>
-        <Btn variant="primary" size="lg" onClick={onDemo}>🚀 Voir la démo hôtel</Btn>
+
+      {/* Hero */}
+      <div style={{ maxWidth: 1060, margin: "0 auto", padding: "44px 22px 10px", textAlign: "center" }}>
+        <Tag color={C.accent}>DÉMO INTERACTIVE — SANS INSCRIPTION</Tag>
+        <h1 style={{ ...FF, fontSize: "clamp(32px, 6vw, 54px)", fontWeight: 900, color: C.text, marginTop: 18, letterSpacing: -1.2, lineHeight: 1.08, textWrap: "balance" }}>
+          L'hôtel, réinventé par le QR code.
+        </h1>
+        <p style={{ ...FF, fontSize: 17, color: C.textSecondary, margin: "16px auto 0", maxWidth: 560, lineHeight: 1.65 }}>
+          Room service, check-in en ligne et conciergerie — le tout depuis un QR code collé sur la porte de chaque chambre. Sans application à installer.
+        </p>
+        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginTop: 28 }}>
+          <Btn variant="primary" size="lg" onClick={onDemo}>🚀 Voir la démo hôtel</Btn>
+          <Btn variant="subtle" size="lg" onClick={openPortal}>📱 Ouvrir le portail chambre</Btn>
+        </div>
       </div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center", marginTop: 26, maxWidth: 560 }}>
-        {features.map((ft) => (
-          <Tag key={ft} color={C.textSecondary} style={{ background: C.surface, border: `1px solid ${C.border}` }}>{ft}</Tag>
-        ))}
+
+      {/* Aperçu produit : dashboard + téléphone */}
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "40px 22px 10px", display: "flex", gap: 22, justifyContent: "center", alignItems: "flex-end", flexWrap: "wrap" }}>
+        {/* Mini dashboard */}
+        <div className="wgm-tile" onClick={onDemo} style={{ flex: "1 1 380px", maxWidth: 520, cursor: "pointer" }}>
+          <Surface style={{ padding: 0, overflow: "hidden" }}>
+            <div style={{ background: C.dark, padding: "10px 16px", display: "flex", gap: 6, alignItems: "center" }}>
+              <span style={{ width: 9, height: 9, borderRadius: 999, background: "#FF5F57" }} />
+              <span style={{ width: 9, height: 9, borderRadius: 999, background: "#FEBC2E" }} />
+              <span style={{ width: 9, height: 9, borderRadius: 999, background: "#28C840" }} />
+              <span style={{ ...FF, color: "rgba(255,255,255,.6)", fontSize: 11.5, fontWeight: 700, marginLeft: 8 }}>Dashboard réception</span>
+            </div>
+            <div style={{ padding: 16 }}>
+              <div style={{ display: "flex", gap: 10 }}>
+                {[["CA du jour", "1 240 €", C.accentGreen], ["Commandes", "17", C.text], ["Arrivées", "5", C.accentBlue]].map(([k, v, col]) => (
+                  <div key={k} style={{ flex: 1, background: C.surfaceAlt, borderRadius: 12, padding: "10px 12px" }}>
+                    <div style={{ ...FF, fontSize: 10.5, fontWeight: 700, color: C.textSecondary }}>{k}</div>
+                    <div style={{ ...FF, fontSize: 17, fontWeight: 900, color: col, marginTop: 3 }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+              {[["Ch. 204", "Club Sandwich + 2 Cafés", "Nouvelle", C.accentBlue], ["Ch. 302", "Champagne brut 75cl", "En préparation", C.accentOrange], ["Ch. 103", "Petit-déj continental", "Prête", C.accentGreen]].map(([room, items, st, col]) => (
+                <div key={room} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "10px 2px", borderBottom: `1px solid ${C.border}` }}>
+                  <span style={{ ...FF, fontSize: 12.5, fontWeight: 800 }}>{room}</span>
+                  <span style={{ ...FF, fontSize: 12, color: C.textSecondary, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{items}</span>
+                  <Tag color={col} style={{ fontSize: 10.5 }}>{st}</Tag>
+                </div>
+              ))}
+            </div>
+          </Surface>
+        </div>
+        {/* Mini téléphone */}
+        <div className="wgm-tile" onClick={openPortal} style={{ flex: "0 0 220px", cursor: "pointer" }}>
+          <div style={{ background: C.dark, borderRadius: 30, padding: 10, boxShadow: "0 20px 50px rgba(0,0,0,.2)" }}>
+            <div style={{ background: C.bg, borderRadius: 22, padding: 12, minHeight: 300 }}>
+              <div style={{ background: "linear-gradient(135deg, #1D1D1F, #3A3A3C)", borderRadius: 14, padding: 12, color: C.white }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 18 }}>🏨</span>
+                  <span style={{ ...FF, fontSize: 9.5, fontWeight: 700, background: "rgba(255,255,255,.15)", borderRadius: 999, padding: "2px 8px" }}>Chambre 204</span>
+                </div>
+                <div style={{ ...FF, fontSize: 12.5, fontWeight: 800, marginTop: 8 }}>Hôtel Démo</div>
+                <div style={{ ...FF, fontSize: 9.5, opacity: 0.7, marginTop: 2 }}>Bon séjour, Léa ✓</div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
+                {miniTiles.map(([em, lb]) => (
+                  <div key={lb} style={{ background: C.surface, borderRadius: 11, padding: "10px 8px", border: `1px solid ${C.border}` }}>
+                    <div style={{ fontSize: 16 }}>{em}</div>
+                    <div style={{ ...FF, fontSize: 9.5, fontWeight: 800, marginTop: 4 }}>{lb}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div style={{ ...FF, fontSize: 12.5, color: C.textTertiary, marginTop: 40 }}>
-        Démo 100% autonome — aucune donnée réelle, tout se passe dans votre navigateur.
+
+      {/* Comment ça marche */}
+      <div style={{ maxWidth: 1060, margin: "0 auto", padding: "54px 22px 0" }}>
+        <h2 style={{ ...FF, fontSize: 26, fontWeight: 900, textAlign: "center", letterSpacing: -0.5 }}>Comment ça marche</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, marginTop: 24 }}>
+          {steps.map((s, i) => (
+            <Surface key={s.title}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ ...FF, width: 26, height: 26, borderRadius: 999, background: C.dark, color: C.white, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900 }}>{i + 1}</span>
+                <span style={{ fontSize: 24 }}>{s.emoji}</span>
+              </div>
+              <div style={{ ...FF, fontWeight: 800, fontSize: 15.5, marginTop: 10 }}>{s.title}</div>
+              <div style={{ ...FF, fontSize: 13.5, color: C.textSecondary, marginTop: 5, lineHeight: 1.55 }}>{s.desc}</div>
+            </Surface>
+          ))}
+        </div>
+      </div>
+
+      {/* Features */}
+      <div style={{ maxWidth: 1060, margin: "0 auto", padding: "50px 22px 0" }}>
+        <h2 style={{ ...FF, fontSize: 26, fontWeight: 900, textAlign: "center", letterSpacing: -0.5 }}>Tout votre hôtel, un seul outil</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14, marginTop: 24 }}>
+          {features.map((ft) => (
+            <Surface key={ft.title} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+              <span style={{ fontSize: 26 }}>{ft.emoji}</span>
+              <span>
+                <span style={{ ...FF, display: "block", fontWeight: 800, fontSize: 15 }}>{ft.title}</span>
+                <span style={{ ...FF, display: "block", fontSize: 13, color: C.textSecondary, marginTop: 4, lineHeight: 1.5 }}>{ft.desc}</span>
+              </span>
+            </Surface>
+          ))}
+        </div>
+      </div>
+
+      {/* CTA final + footer */}
+      <div style={{ maxWidth: 720, margin: "0 auto", padding: "54px 22px 0", textAlign: "center" }}>
+        <div style={{ background: "linear-gradient(135deg, #1D1D1F 0%, #3A3A3C 100%)", borderRadius: 22, padding: "34px 24px", color: C.white }}>
+          <div style={{ ...FF, fontSize: 23, fontWeight: 900, letterSpacing: -0.5 }}>Testez le parcours complet en 2 minutes</div>
+          <div style={{ ...FF, fontSize: 14, opacity: 0.75, marginTop: 8, lineHeight: 1.6 }}>
+            Check-in chambre 204 → room service sur la note → check-out express, et tout apparaît côté réception.
+          </div>
+          <div style={{ marginTop: 20 }}>
+            <Btn variant="red" size="lg" onClick={onDemo}>🚀 Voir la démo hôtel</Btn>
+          </div>
+        </div>
+      </div>
+      <div style={{ ...FF, textAlign: "center", fontSize: 12.5, color: C.textTertiary, padding: "34px 20px 40px", lineHeight: 1.7 }}>
+        Démo 100% autonome — aucune donnée réelle, tout se passe dans votre navigateur.<br />
+        © {new Date().getFullYear()} Wegemo Hôtel
       </div>
     </div>
   );
@@ -2408,6 +2661,7 @@ export default function App() {
   }, []);
   return (
     <ToastProvider>
+      <GlobalStyles />
       {route.view === "portal" ? <RoomPortal room={route.room} /> : <Shell />}
     </ToastProvider>
   );
