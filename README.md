@@ -21,6 +21,8 @@ commandes de la session, synchronisation client ↔ réception).
 5. **🥐 Petit-déjeuner en chambre** → formule + créneau (+8 € plateau)
 6. **🧳 Check-out express** → note détaillée (nuits × dates réelles + commandes de la session + taxe de séjour)
 7. Retour au dashboard → onglet **🛎️ Check-in** : la fiche est là (tag 📲, identité, code, ligne 🧳 « vérifier la chambre puis confirmer »)
+8. Onglet **🧳 Check-out** : checklist d'inspection (chambre + minibar) → **facture imprimable** → confirmation du départ → la chambre passe « à nettoyer » dans **🛏️ Chambres** (ménage → « Marquer propre »)
+9. Onglet **🕑 Activité** : journal en temps réel de tout ce qui s'est passé (check-ins, commandes, demandes, avis ⭐) — l'avis laissé au check-out remonte aussi dans le KPI Satisfaction et le CRM
 
 > La synchronisation passe par le `localStorage` du navigateur : elle fonctionne
 > entre onglets d'un même appareil (limite volontaire du « zéro backend »).

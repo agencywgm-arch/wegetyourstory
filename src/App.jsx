@@ -155,6 +155,8 @@ const KEY_ORDERS = "wgm_demo_orders";
 const KEY_REQUESTS = "wgm_demo_requests";
 const KEY_MENU = "wgm_demo_menu";
 const KEY_HOTEL = "wgm_demo_hotel";
+const KEY_ACTIVITY = "wgm_demo_activity";
+const KEY_ROOMS = "wgm_demo_rooms_state";
 
 const readLS = (key, fallback) => {
   try {
@@ -183,6 +185,49 @@ const readGuestOrders = () => readLS(KEY_ORDERS, []);
 const writeGuestOrders = (list) => writeLS(KEY_ORDERS, list);
 const readGuestRequests = () => readLS(KEY_REQUESTS, []);
 const writeGuestRequests = (list) => writeLS(KEY_REQUESTS, list);
+
+/* Journal d'activité : chaque action (client ou réception) laisse une trace */
+const logActivity = (emoji, text, type = "stay") => {
+  const list = readLS(KEY_ACTIVITY, []);
+  list.push({ id: uid(), ts: Date.now(), at: nowTime(), emoji, text, type });
+  writeLS(KEY_ACTIVITY, list.slice(-100));
+};
+const readActivity = () => readLS(KEY_ACTIVITY, []).slice().reverse();
+const timeAgo = (ts) => {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return "à l'instant";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `il y a ${m} min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `il y a ${h} h`;
+  return `il y a ${Math.floor(h / 24)} j`;
+};
+
+/* État ménage des chambres : une chambre libérée passe "à nettoyer" */
+const readRoomsState = () => readLS(KEY_ROOMS, {});
+const setRoomCleaning = (room, dirty) => {
+  const m = readRoomsState();
+  if (dirty) m[room] = "dirty";
+  else delete m[room];
+  writeLS(KEY_ROOMS, m);
+};
+
+/* Note de chambre — partagée entre le check-out express (client) et la
+   facture côté réception, pour que les deux racontent la même histoire. */
+function computeBill(entry, roomOrders, late) {
+  const nights = nightsBetween(entry.checkin_date, entry.checkout_date);
+  const guests = entry.guests || 1;
+  const ordersTotal = (roomOrders || []).reduce((s, o) => s + (o.total || 0), 0);
+  const lines = [
+    { label: `Chambre ${entry.room} · ${nights} nuit(s) × ${fmtEuro(DEMO_NIGHT_RATE)}`, amount: nights * DEMO_NIGHT_RATE },
+    { label: `Petit-déjeuner (${guests} pers. · hier)`, amount: guests * 22 },
+    { label: "Minibar", amount: 8 },
+    ordersTotal > 0 && { label: "Room service & petit-déj en chambre (votre séjour)", amount: ordersTotal },
+    { label: `Taxe de séjour · ${guests} pers. × ${nights} nuit(s)`, amount: guests * nights * DEMO_CITY_TAX },
+    late && { label: "Late check-out (15h)", amount: 25 },
+  ].filter(Boolean);
+  return { lines, total: lines.reduce((s, l) => s + l.amount, 0), nights, guests };
+}
 
 /* Fait avancer automatiquement les statuts des commandes room service :
    Reçue (8s) → En préparation (22s de plus) → En route. */
@@ -652,6 +697,7 @@ function RoomPortal({ room }) {
     const list = readGuestRequests();
     list.push({ id: uid(), room, label, status: "Transmis à la réception ✓", at: nowTime() });
     writeGuestRequests(list);
+    logActivity("💬", `Demande ch. ${room} — ${label}`, "request");
     toast.success("Demande transmise à la réception ✓");
   };
 
@@ -659,6 +705,11 @@ function RoomPortal({ room }) {
     const list = readGuestOrders();
     list.push({ id: uid(), room, placed_at: Date.now(), at: nowTime(), ...order });
     writeGuestOrders(list);
+    if (order.order_type === "breakfast") {
+      logActivity("🥐", `Petit-déj programmé ch. ${room} — ${order.label} · ${order.slot} · ${fmtEuro(order.total)}`, "order");
+    } else {
+      logActivity("🍽️", `Commande room service ch. ${room} — ${fmtEuro(order.total)} (${order.payment_method === "room" ? "sur la note" : "à la livraison"})`, "order");
+    }
   };
 
   const common = { room, active, checkinEntry, orders, requests, addRequest, placeOrder, toast, back: () => setView("hub"), setView };
@@ -870,6 +921,7 @@ function CheckinWizard({ room, back, toast }) {
     const list = readGuestCheckins().filter((x) => Number(x.room) !== Number(room));
     list.push(e);
     writeGuestCheckins(list);
+    logActivity("📲", `Check-in en ligne — ${e.guest_name} · ch. ${room} · code ${e.access_code}`, "stay");
     setEntry(e);
     setStep(5);
     toast.success("Check-in enregistré — la réception est prévenue ✓");
@@ -1481,19 +1533,7 @@ function CheckoutExpress({ room, active, orders, toast, back }) {
     );
   }
 
-  const nights = nightsBetween(active.checkin_date, active.checkout_date);
-  const guests = active.guests || 1;
-  const ordersTotal = orders.reduce((s, o) => s + (o.total || 0), 0);
-
-  const lines = [
-    { label: `Chambre ${room} · ${nights} nuit(s) × ${fmtEuro(DEMO_NIGHT_RATE)}`, amount: nights * DEMO_NIGHT_RATE },
-    { label: `Petit-déjeuner (${guests} pers. · hier)`, amount: guests * 22 },
-    { label: "Minibar", amount: 8 },
-    ordersTotal > 0 && { label: "Room service & petit-déj en chambre (votre séjour)", amount: ordersTotal },
-    { label: `Taxe de séjour · ${guests} pers. × ${nights} nuit(s)`, amount: guests * nights * DEMO_CITY_TAX },
-    late && { label: "Late check-out (15h)", amount: 25 },
-  ].filter(Boolean);
-  const total = lines.reduce((s, l) => s + l.amount, 0);
+  const { lines, total } = computeBill(active, orders, late);
 
   const submit = () => {
     const list = readGuestCheckins().map((e) =>
@@ -1510,8 +1550,15 @@ function CheckoutExpress({ room, active, orders, toast, back }) {
         : e
     );
     writeGuestCheckins(list);
+    logActivity("🧳", `Check-out express — ${active.guest_name} · ch. ${room} · note ${fmtEuro(total)}`, "stay");
     setScreen(3);
     toast.success("Check-out enregistré — la réception vérifie la chambre ✓");
+  };
+
+  const giveRating = (s) => {
+    if (rating === 0) logActivity("⭐", `Avis client — ${active.guest_name} · ch. ${room} : ${s}/5`, "stay");
+    setRating(s);
+    writeGuestCheckins(readGuestCheckins().map((e) => (e.id === active.id ? { ...e, rating: s } : e)));
   };
 
   const CheckRow = ({ checked, onChange, title, sub }) => (
@@ -1615,7 +1662,7 @@ function CheckoutExpress({ room, active, orders, toast, back }) {
               {[1, 2, 3, 4, 5].map((s) => (
                 <span
                   key={s}
-                  onClick={() => setRating(s)}
+                  onClick={() => giveRating(s)}
                   style={{ fontSize: 30, cursor: "pointer", filter: s <= rating ? "none" : "grayscale(1) opacity(.35)", padding: "0 3px" }}
                 >
                   ⭐
@@ -1715,7 +1762,9 @@ function Dashboard({ onExit }) {
     const guest = readGuestCheckins().map((e) => ({ ...e, src: "guest" }));
     const staff = readLS(KEY_STAFF_RESAS, []).map((e) => ({ ...e, src: "staff" }));
     const out = [...guest];
-    const taken = (room) => out.some((e) => Number(e.room) === Number(room) && e.status !== "checked_out");
+    // Une entrée existante pour la chambre (même clôturée) bloque les
+    // seeds : sinon le séjour de démo "ressuscite" après un check-out.
+    const taken = (room) => out.some((e) => Number(e.room) === Number(room));
     staff.forEach((e) => { if (!taken(e.room)) out.push(e); });
     seeds.forEach((e) => { if (!taken(e.room)) out.push(e); });
     return out;
@@ -1730,6 +1779,7 @@ function Dashboard({ onExit }) {
     } else {
       setSeedOrders((list) => list.map((x) => (x.id === o.id ? { ...x, status: meta.next } : x)));
     }
+    if (meta.next === "done") logActivity("✅", `Commande ch. ${o.room} livrée — ${fmtEuro(o.total)}`, "order");
     toast.success(`Ch. ${o.room} → ${ORDER_STATUS_STAFF[meta.next].label}`);
   };
 
@@ -1741,25 +1791,37 @@ function Dashboard({ onExit }) {
     } else {
       setSeeds((list) => list.map((e) => (e.id === entry.id ? { ...e, status } : e)));
     }
-    toast.success(status === "in_house" ? `${entry.guest_name} — check-in confirmé ✓` : `Ch. ${entry.room} libérée — séjour clôturé ✓`);
+    if (status === "in_house") {
+      logActivity("🔑", `Check-in confirmé — ${entry.guest_name} · ch. ${entry.room}`, "stay");
+    } else if (status === "checked_out") {
+      setRoomCleaning(entry.room, true);
+      logActivity("🧳", `Départ — ${entry.guest_name} · ch. ${entry.room} → à nettoyer`, "stay");
+    }
+    toast.success(status === "in_house" ? `${entry.guest_name} — check-in confirmé ✓` : `Ch. ${entry.room} libérée — envoyée au ménage 🧹`);
   };
 
   const addReservation = (form) => {
     const list = readLS(KEY_STAFF_RESAS, []);
     list.push({ id: uid(), status: "arriving", ...form });
     writeLS(KEY_STAFF_RESAS, list);
+    logActivity("📝", `Réservation créée — ${form.guest_name} · ch. ${form.room}`, "stay");
     toast.success(`Réservation créée — ${form.guest_name}, ch. ${form.room} ✓`);
   };
 
   const newOrdersCount = orders.filter((o) => o.status === "pending").length;
-  const checkinTodo =
-    board.filter((e) => e.status === "arriving").length +
-    board.filter((e) => e.status === "departing").length;
+  const arrivalsCount = board.filter((e) => e.status === "arriving").length;
+  const departuresDue = board.filter(
+    (e) => e.status === "departing" || (e.status === "in_house" && e.checkout_date && e.checkout_date <= todayISO())
+  );
+  const dirtyCount = Object.keys(readRoomsState()).length;
 
   const tabs = [
     ["overview", "📊", "Vue d'ensemble", 0],
     ["orders", "🧾", "Room service", newOrdersCount],
-    ["checkin", "🛎️", "Check-in", checkinTodo],
+    ["checkin", "🛎️", "Check-in", arrivalsCount],
+    ["departures", "🧳", "Check-out", departuresDue.length],
+    ["rooms", "🛏️", "Chambres", dirtyCount],
+    ["activity", "🕑", "Activité", 0],
     ["billing", "💶", "Facturation", 0],
     ["qr", "🔳", "QR Chambres", 0],
     ["inventory", "📦", "Inventaire", 0],
@@ -1843,6 +1905,9 @@ function Dashboard({ onExit }) {
         {tab === "overview" && <OverviewTab orders={orders} board={board} />}
         {tab === "orders" && <OrdersTab orders={orders} advanceOrder={advanceOrder} />}
         {tab === "checkin" && <CheckinBoardTab board={board} setCheckinStatus={setCheckinStatus} addReservation={addReservation} />}
+        {tab === "departures" && <DeparturesTab departures={departuresDue} board={board} setCheckinStatus={setCheckinStatus} hotel={hotel} toast={toast} />}
+        {tab === "rooms" && <RoomsTab board={board} toast={toast} />}
+        {tab === "activity" && <ActivityTab />}
         {tab === "billing" && <BillingTab orders={orders} board={board} toast={toast} />}
         {tab === "qr" && <QRTab toast={toast} />}
         {tab === "inventory" && <InventoryTab menu={menu} setMenu={setMenu} toast={toast} />}
@@ -1870,18 +1935,25 @@ function OverviewTab({ orders, board }) {
   const revenue = orders.reduce((s, o) => s + (o.total || 0), 0);
   const count = orders.length;
   const inHouse = board.filter((e) => e.status === "in_house").length;
-  const activity = [
-    ...orders.slice(0, 5).map((o) => ({
-      key: "o" + o.id,
-      text: `🍽️ Ch. ${o.room} — ${o.order_type === "breakfast" ? o.label + " (petit-déj)" : o.items.map((i) => `${i.qty}× ${i.name}`).join(", ")}`,
-      right: fmtEuro(o.total), at: o.at,
-    })),
-    ...board.filter((e) => e.access_code).slice(0, 3).map((e) => ({
-      key: "c" + e.id,
-      text: `📲 Check-in en ligne — ${e.guest_name} (ch. ${e.room})`,
-      right: e.access_code, at: "",
-    })),
-  ];
+  const ratings = readGuestCheckins().map((e) => e.rating).filter(Boolean);
+  const satisfaction = ratings.length
+    ? (ratings.reduce((s, r) => s + r, 0) / ratings.length).toFixed(1).replace(".", ",") + "/5"
+    : "—";
+  const log = readActivity().slice(0, 6);
+  const activity = log.length
+    ? log.map((a) => ({ key: a.id, text: `${a.emoji} ${a.text}`, right: "", at: `${a.at} · ${timeAgo(a.ts)}` }))
+    : [
+        ...orders.slice(0, 5).map((o) => ({
+          key: "o" + o.id,
+          text: `🍽️ Ch. ${o.room} — ${o.order_type === "breakfast" ? o.label + " (petit-déj)" : o.items.map((i) => `${i.qty}× ${i.name}`).join(", ")}`,
+          right: fmtEuro(o.total), at: o.at,
+        })),
+        ...board.filter((e) => e.access_code).slice(0, 3).map((e) => ({
+          key: "c" + e.id,
+          text: `📲 Check-in en ligne — ${e.guest_name} (ch. ${e.room})`,
+          right: e.access_code, at: "",
+        })),
+      ];
   const expressPending = board.filter((e) => e.express_checkout && e.status !== "checked_out");
   return (
     <div>
@@ -1892,7 +1964,7 @@ function OverviewTab({ orders, board }) {
             🧳 {expressPending.length} check-out express à contrôler
           </div>
           <div style={{ ...FF, fontSize: 13, color: C.textSecondary, marginTop: 4 }}>
-            {expressPending.map((e) => `Ch. ${e.room} (${e.guest_name} · ${fmtEuro(e.bill_total || 0)})`).join(" · ")} — vérifier la chambre puis confirmer dans l'onglet Check-in.
+            {expressPending.map((e) => `Ch. ${e.room} (${e.guest_name} · ${fmtEuro(e.bill_total || 0)})`).join(" · ")} — inspection et confirmation dans l'onglet 🧳 Check-out.
           </div>
         </Surface>
       )}
@@ -1901,6 +1973,7 @@ function OverviewTab({ orders, board }) {
         <KPICard label="Commandes room service" value={count} sub="Aujourd'hui" />
         <KPICard label="Panier moyen" value={count ? fmtEuro(revenue / count) : "—"} sub="Par commande" />
         <KPICard label="Chambres en séjour" value={inHouse} sub={`Sur ${DEMO_HOTEL_ROOMS.length} chambres`} color={C.accentBlue} />
+        <KPICard label="Satisfaction" value={satisfaction} sub={ratings.length ? `${ratings.length} avis check-out` : "En attente d'avis"} color={C.accentPurple} />
       </div>
       <SectionTitle>Activité récente</SectionTitle>
       <Surface style={{ padding: "6px 18px" }}>
@@ -2049,6 +2122,7 @@ function CheckinBoardTab({ board, setCheckinStatus, addReservation }) {
                     <span style={{ ...FF, fontWeight: 800, fontSize: 15.5 }}>{e.guest_name}</span>
                     <Tag color={meta.color}>{meta.label}</Tag>
                     {e.access_code && <Tag color={C.accentBlue}>📲 en ligne</Tag>}
+                    {e.rating && <Tag color={C.accentPurple}>⭐ {e.rating}/5</Tag>}
                   </div>
                   <div style={{ ...FF, fontSize: 13, color: C.textSecondary, marginTop: 4 }}>
                     {e.guests} pers. · {fmtDate(e.checkin_date)} → {fmtDate(e.checkout_date)} {e.email && <>· {e.email}</>}
@@ -2114,6 +2188,245 @@ function CheckinBoardTab({ board, setCheckinStatus, addReservation }) {
             </Btn>
           </div>
         </Modal>
+      )}
+    </div>
+  );
+}
+
+/* ------- Check-out (départs du jour) ------- */
+
+function printInvoice(hotel, entry, lines, total) {
+  const w = window.open("", "_blank", "width=440,height=680");
+  if (!w) return;
+  const rows = lines
+    .map((l) => `<tr><td style="padding:6px 0;color:#6E6E73;">${l.label}</td><td style="padding:6px 0;text-align:right;font-weight:700;">${fmtEuro(l.amount)}</td></tr>`)
+    .join("");
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Facture — Chambre ${entry.room}</title></head>
+<body style="font-family:'Figtree',-apple-system,sans-serif;color:#1D1D1F;padding:28px;max-width:400px;margin:0 auto;">
+  <div style="font-size:26px;">${hotel.logo_emoji}</div>
+  <h2 style="margin:8px 0 2px;">${hotel.name}</h2>
+  <div style="color:#6E6E73;font-size:13px;">${hotel.address}</div>
+  <hr style="border:none;border-top:1px solid #E8E8ED;margin:16px 0;">
+  <div style="font-size:14px;line-height:1.7;">
+    <b>Facture — Chambre ${entry.room}</b><br>
+    ${entry.guest_name || ""} · ${entry.guests || 1} pers.<br>
+    Séjour du ${fmtDate(entry.checkin_date)} au ${fmtDate(entry.checkout_date)}
+  </div>
+  <table style="width:100%;border-collapse:collapse;font-size:13.5px;margin-top:14px;">${rows}</table>
+  <hr style="border:none;border-top:1px solid #E8E8ED;margin:10px 0;">
+  <table style="width:100%;font-size:16px;font-weight:800;"><tr><td>Total</td><td style="text-align:right;">${fmtEuro(total)}</td></tr></table>
+  <p style="color:#AEAEB2;font-size:11.5px;margin-top:18px;">Payé par la carte utilisée à la réservation.<br>Document de démonstration — Wegemo Hôtel.</p>
+  <script>window.print();</script>
+</body></html>`);
+  w.document.close();
+}
+
+function DeparturesTab({ departures, setCheckinStatus, hotel, toast }) {
+  const [checks, setChecks] = useState({}); // id -> { room: bool, minibar: bool }
+  const setCheck = (id, key, val) => setChecks((c) => ({ ...c, [id]: { ...c[id], [key]: val } }));
+
+  const billFor = (e) => {
+    const roomOrders = readGuestOrders().filter((o) => Number(o.room) === Number(e.room));
+    const bill = computeBill(e, roomOrders, e.late_checkout);
+    return e.bill_total ? { ...bill, total: e.bill_total } : bill;
+  };
+
+  const CheckItem = ({ checked, onChange, label }) => (
+    <label style={{ display: "inline-flex", alignItems: "center", gap: 7, cursor: "pointer", ...FF, fontSize: 13, fontWeight: 700, color: checked ? C.accentGreen : C.textSecondary }}>
+      <input type="checkbox" checked={!!checked} onChange={(ev) => onChange(ev.target.checked)} style={{ width: 15, height: 15 }} />
+      {label}
+    </label>
+  );
+
+  return (
+    <div>
+      <PageTitle>🧳 Check-out — départs du jour</PageTitle>
+      <div style={{ ...FF, fontSize: 13.5, color: C.textSecondary, marginBottom: 16, lineHeight: 1.5 }}>
+        Contrôlez la chambre, éditez la facture, puis confirmez : la chambre part automatiquement au ménage.
+      </div>
+      <div style={{ display: "grid", gap: 12 }}>
+        {departures.length === 0 && (
+          <Surface style={{ textAlign: "center", padding: 28 }}>
+            <div style={{ fontSize: 32 }}>🌤️</div>
+            <div style={{ ...FF, fontWeight: 800, fontSize: 15, marginTop: 8 }}>Aucun départ à traiter</div>
+            <div style={{ ...FF, fontSize: 13, color: C.textSecondary, marginTop: 4 }}>Tous les check-outs du jour sont clôturés.</div>
+          </Surface>
+        )}
+        {departures.map((e) => {
+          const bill = billFor(e);
+          const ck = checks[e.id] || {};
+          const ready = ck.room && ck.minibar;
+          return (
+            <Surface key={e.id}>
+              <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}>
+                <RoomBadge room={e.room} color={C.accentOrange} />
+                <div style={{ flex: 1, minWidth: 220 }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    <span style={{ ...FF, fontWeight: 800, fontSize: 15.5 }}>{e.guest_name}</span>
+                    {e.express_checkout ? <Tag color={C.accentOrange}>🧳 express</Tag> : <Tag color={C.accentBlue}>départ prévu</Tag>}
+                    {e.rating && <Tag color={C.accentPurple}>⭐ {e.rating}/5</Tag>}
+                  </div>
+                  <div style={{ ...FF, fontSize: 13, color: C.textSecondary, marginTop: 4 }}>
+                    {e.guests || 1} pers. · {fmtDate(e.checkin_date)} → {fmtDate(e.checkout_date)} · note <b style={{ color: C.text }}>{fmtEuro(bill.total)}</b>
+                  </div>
+                  {e.express_checkout && (
+                    <div style={{ ...FF, fontSize: 12.5, color: C.textSecondary, background: C.surfaceAlt, borderRadius: 10, padding: "7px 11px", marginTop: 8 }}>
+                      {e.late_checkout ? "🕐 Late check-out 15h · " : "🕛 Départ avant 12h · "}
+                      {e.luggage_hold ? "🧳 bagagerie demandée · " : ""}
+                      {e.invoice_email ? `facture → ${e.invoice_email}` : "facture à remettre"}
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginTop: 10 }}>
+                    <CheckItem checked={ck.room} onChange={(v) => setCheck(e.id, "room", v)} label="Chambre inspectée" />
+                    <CheckItem checked={ck.minibar} onChange={(v) => setCheck(e.id, "minibar", v)} label="Minibar compté" />
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexDirection: "column" }}>
+                  <Btn variant="subtle" size="sm" onClick={() => printInvoice(hotel, e, bill.lines, bill.total)}>🧾 Facture</Btn>
+                  <Btn
+                    variant="orange" size="sm" disabled={!ready}
+                    onClick={() => setCheckinStatus(e, "checked_out")}
+                  >
+                    ✅ Confirmer le départ
+                  </Btn>
+                  {!ready && (
+                    <div style={{ ...FF, fontSize: 11, color: C.textTertiary, maxWidth: 150, textAlign: "center" }}>
+                      Cochez l'inspection pour confirmer
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Surface>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ------- Chambres (occupation & ménage) ------- */
+
+function RoomsTab({ board, toast }) {
+  const cleaning = readRoomsState();
+  const occupant = (room) =>
+    board.find((e) => Number(e.room) === Number(room) && e.status !== "checked_out");
+
+  const stateOf = (room) => {
+    if (occupant(room)) return "occupied";
+    if (cleaning[room]) return "dirty";
+    return "free";
+  };
+  const META = {
+    occupied: { label: "Occupée", color: C.accentBlue },
+    dirty: { label: "À nettoyer", color: C.accentOrange },
+    free: { label: "Libre", color: C.accentGreen },
+  };
+  const counts = DEMO_HOTEL_ROOMS.reduce(
+    (acc, r) => { acc[stateOf(r)]++; return acc; },
+    { occupied: 0, dirty: 0, free: 0 }
+  );
+
+  return (
+    <div>
+      <PageTitle>🛏️ Chambres</PageTitle>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+        {Object.entries(META).map(([k, m]) => (
+          <Tag key={k} color={m.color}>{m.label} · {counts[k]}</Tag>
+        ))}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12 }}>
+        {DEMO_HOTEL_ROOMS.map((room) => {
+          const st = stateOf(room);
+          const meta = META[st];
+          const guest = occupant(room);
+          return (
+            <Surface key={room} style={{ borderTop: `3px solid ${meta.color}`, padding: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ ...FF, fontWeight: 900, fontSize: 15 }}>Ch. {room}</span>
+                <Tag color={meta.color} style={{ fontSize: 11 }}>{meta.label}</Tag>
+              </div>
+              <div style={{ ...FF, fontSize: 12.5, color: C.textSecondary, marginTop: 6, minHeight: 18 }}>
+                {guest ? `${guest.guest_name} · ${guest.guests || 1} pers.` : st === "dirty" ? "En attente du ménage" : "Prête à louer"}
+              </div>
+              {st === "dirty" && (
+                <div style={{ marginTop: 10 }}>
+                  <Btn
+                    variant="green" size="sm" full
+                    onClick={() => {
+                      setRoomCleaning(room, false);
+                      logActivity("🧹", `Ch. ${room} nettoyée — prête à louer`, "stay");
+                      toast.success(`Chambre ${room} propre — remise en vente ✓`);
+                    }}
+                  >
+                    🧹 Marquer propre
+                  </Btn>
+                </div>
+              )}
+            </Surface>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ------- Journal d'activité ------- */
+
+function ActivityTab() {
+  const [filter, setFilter] = useState("all");
+  const all = readActivity();
+  const counts = {
+    all: all.length,
+    stay: all.filter((a) => a.type === "stay").length,
+    order: all.filter((a) => a.type === "order").length,
+    request: all.filter((a) => a.type === "request").length,
+  };
+  const filters = [
+    ["all", "Tout", C.dark],
+    ["stay", "Séjours", C.accentBlue],
+    ["order", "Commandes", C.accentGreen],
+    ["request", "Demandes", C.accentPurple],
+  ];
+  const shown = all.filter((a) => (filter === "all" ? true : a.type === filter));
+
+  return (
+    <div>
+      <PageTitle>🕑 Activité</PageTitle>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+        {filters.map(([id, label, color]) => (
+          <button
+            key={id}
+            onClick={() => setFilter(id)}
+            style={{
+              ...FF, border: `1px solid ${filter === id ? "transparent" : C.border}`, borderRadius: 999,
+              padding: "7px 14px", fontSize: 13, fontWeight: 800, cursor: "pointer",
+              background: filter === id ? color : C.surface, color: filter === id ? C.white : C.textSecondary,
+            }}
+          >
+            {label} · {counts[id]}
+          </button>
+        ))}
+      </div>
+      {shown.length === 0 ? (
+        <Surface style={{ textAlign: "center", padding: 28 }}>
+          <div style={{ fontSize: 32 }}>🕑</div>
+          <div style={{ ...FF, fontWeight: 800, fontSize: 15, marginTop: 8 }}>Rien pour l'instant</div>
+          <div style={{ ...FF, fontSize: 13, color: C.textSecondary, marginTop: 4, lineHeight: 1.5 }}>
+            Chaque check-in, commande ou demande (côté client comme côté réception) apparaîtra ici en temps réel.
+          </div>
+        </Surface>
+      ) : (
+        <Surface style={{ padding: "6px 18px" }}>
+          {shown.map((a, i) => (
+            <div key={a.id} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 0", borderBottom: i < shown.length - 1 ? `1px solid ${C.border}` : "none" }}>
+              <span style={{ fontSize: 20 }}>{a.emoji}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ ...FF, fontSize: 13.5, fontWeight: 600, color: C.text, lineHeight: 1.45 }}>{a.text}</div>
+                <div style={{ ...FF, fontSize: 11.5, color: C.textTertiary, marginTop: 2 }}>{a.at} · {timeAgo(a.ts)}</div>
+              </div>
+            </div>
+          ))}
+        </Surface>
       )}
     </div>
   );
@@ -2332,18 +2645,42 @@ function MenuTab({ menu, setMenu, toast }) {
 /* ------- CRM ------- */
 
 function CRMTab({ board }) {
+  const [query, setQuery] = useState("");
   const current = board
     .filter((e) => e.guest_name)
     .map((e) => ({
       name: e.guest_name, email: e.email || "—", phone: e.phone || "—", visits: 1,
-      spent: e.bill_total || 0, last: `Ch. ${e.room} · ${STATUS_META[e.status] ? STATUS_META[e.status].label : e.status}`,
+      spent: e.bill_total || 0,
+      last: `Ch. ${e.room} · ${STATUS_META[e.status] ? STATUS_META[e.status].label : e.status}${e.rating ? ` · ⭐ ${e.rating}/5` : ""}`,
       tag: e.access_code ? "📲 en ligne" : "",
     }));
-  const all = [...current, ...DEMO_CRM];
+  const all = [...current, ...DEMO_CRM].filter((c) => {
+    const q = query.trim().toLowerCase();
+    return !q || c.name.toLowerCase().includes(q) || (c.email || "").toLowerCase().includes(q);
+  });
   return (
     <div>
-      <PageTitle>👥 CRM clients</PageTitle>
+      <PageTitle
+        right={
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="🔍 Rechercher un client…"
+            style={{
+              ...FF, padding: "9px 14px", borderRadius: 999, border: `1px solid ${C.borderStrong}`,
+              background: C.surface, fontSize: 13.5, width: 220, outline: "none",
+            }}
+          />
+        }
+      >
+        👥 CRM clients
+      </PageTitle>
       <div style={{ display: "grid", gap: 12 }}>
+        {all.length === 0 && (
+          <Surface style={{ textAlign: "center", color: C.textTertiary, ...FF, fontSize: 14 }}>
+            Aucun client ne correspond à « {query} ».
+          </Surface>
+        )}
         {all.map((c, i) => (
           <Surface key={i} style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
             <div style={{ ...FF, width: 44, height: 44, borderRadius: 999, background: C.surfaceAlt, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 15, color: C.textSecondary, flexShrink: 0 }}>
@@ -2372,7 +2709,7 @@ function CRMTab({ board }) {
 function SettingsTab({ hotel, setHotel, toast }) {
   const [f, setF] = useState({ name: hotel.name, address: hotel.address, logo_emoji: hotel.logo_emoji });
   const reset = () => {
-    [KEY_CHECKINS, KEY_STAFF_RESAS, KEY_ORDERS, KEY_REQUESTS, KEY_MENU, KEY_HOTEL].forEach((k) => {
+    [KEY_CHECKINS, KEY_STAFF_RESAS, KEY_ORDERS, KEY_REQUESTS, KEY_MENU, KEY_HOTEL, KEY_ACTIVITY, KEY_ROOMS].forEach((k) => {
       try { localStorage.removeItem(k); } catch {}
     });
     toast.success("Données de démo réinitialisées ✓");
