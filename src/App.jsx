@@ -120,6 +120,36 @@ const fmtEuro = (n) => (Math.round(n * 100) / 100).toFixed(2).replace(".", ",") 
 const nowTime = () =>
   new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 
+/* Safari iOS ignore l'attribut `download` : le fichier s'ouvre dans l'onglet au
+   lieu d'être enregistré. On passe par la feuille de partage, qui propose
+   « Enregistrer dans Fichiers ». */
+const isIOS = () =>
+  /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+// Renvoie false si l'utilisateur a annulé la feuille de partage.
+const saveFile = async (blob, filename) => {
+  if (isIOS()) {
+    const file = new File([blob], filename, { type: blob.type });
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: filename });
+        return true;
+      } catch (e) {
+        if (e?.name === "AbortError") return false;
+        // Partage indisponible malgré canShare : on retombe sur le lien.
+      }
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  return true;
+};
+
 const toISO = (d) => {
   const p = (x) => String(x).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
@@ -2449,7 +2479,7 @@ function BillingTab({ orders, board, toast }) {
   ];
   const total = rows.reduce((s, r) => s + r.amount, 0);
 
-  const exportCSV = () => {
+  const exportCSV = async () => {
     const csv = [
       ["Heure", "Libellé", "Méthode", "Montant EUR"],
       ...rows.map((r) => [r.at, r.desc, r.method, String(r.amount).replace(".", ",")]),
@@ -2458,12 +2488,9 @@ function BillingTab({ orders, board, toast }) {
       .map((r) => r.join(";"))
       .join("\n");
     const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `caisse-${DEMO_HOTEL.slug}-${todayISO()}.csv`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    toast.success("Export CSV téléchargé ✓");
+    if (await saveFile(blob, `caisse-${DEMO_HOTEL.slug}-${todayISO()}.csv`)) {
+      toast.success("Export CSV téléchargé ✓");
+    }
   };
 
   return (
@@ -2497,11 +2524,10 @@ function QRTab({ toast }) {
   const download = async (room) => {
     try {
       const dataUrl = await QRCode.toDataURL(roomPortalUrl(room), { width: 720, margin: 2, color: { dark, light } });
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = `qr-${DEMO_HOTEL.slug}-chambre-${room}.png`;
-      a.click();
-      toast.success(`QR chambre ${room} téléchargé ✓`);
+      const blob = await (await fetch(dataUrl)).blob();
+      if (await saveFile(blob, `qr-${DEMO_HOTEL.slug}-chambre-${room}.png`)) {
+        toast.success(`QR chambre ${room} téléchargé ✓`);
+      }
     } catch {
       toast.error("Impossible de générer le QR");
     }

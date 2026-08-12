@@ -46,13 +46,28 @@ npm run preview   # prévisualiser le build
 
 ## Déploiement
 
-À chaque push sur `main`, le workflow [`deploy.yml`](.github/workflows/deploy.yml)
-construit l'app avec `VITE_BASE_PATH=/wegetyourstory/` et publie `dist/` sur la
-branche `gh-pages`, servie par GitHub Pages.
+### Vercel
+
+[`vercel.json`](vercel.json) configure le projet : build Vite, sortie `dist/`, et
+une règle de réécriture qui renvoie toutes les routes vers `index.html` (le
+portail chambre `/r/…` est une route côté client).
+
+Import du dépôt sur Vercel, puis **rien à régler** : laisser `VITE_BASE_PATH` et
+`VITE_HASH_ROUTING` non définis. L'app est servie à la racine du domaine et le
+routage par chemin fonctionne grâce aux réécritures.
+
+### GitHub Pages
+
+Conservé en parallèle. À chaque push sur `main`, le workflow
+[`deploy.yml`](.github/workflows/deploy.yml) construit l'app avec
+`VITE_BASE_PATH=/wegetyourstory/` et publie `dist/` sur la branche `gh-pages`.
+
+### Variables de build
 
 - `VITE_BASE_PATH` : base path pour un déploiement en sous-dossier
+  (Pages uniquement — à laisser vide sur Vercel)
 - `VITE_HASH_ROUTING=1` : bascule les liens du portail en `#/r/…` pour les
-  hébergeurs statiques sans fallback SPA
+  hébergeurs statiques sans fallback SPA (inutile sur Vercel)
 
 ## Routes
 
