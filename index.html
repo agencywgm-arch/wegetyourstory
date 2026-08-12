@@ -1,14 +1,21 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" translate="no">
   <head>
     <meta charset="UTF-8" />
+    <!-- La traduction automatique du navigateur remplace les nœuds de texte et
+         fait perdre à React ses références : les montants restent figés à leur
+         valeur précédente. L'app est en français uniquement, on exclut donc
+         tout le document. -->
+    <meta name="google" content="notranslate" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="Wegemo Hôtel — room service, check-in en ligne et conciergerie depuis un QR code collé sur la porte de chaque chambre. Démo interactive 100% offline." />
+    <!-- Métadonnées par défaut = Well Done, servi à la racine. Root.jsx les
+         bascule sur la verticale hôtelière quand la route l'exige. -->
+    <meta name="description" content="Well Done — smash burgers Black Angus commandés au QR code de la table. Carte, composition, paiement et suivi en temps réel, sans installer d'application." />
     <meta name="theme-color" content="#1D1D1F" />
-    <meta property="og:title" content="Wegemo Hôtel — L'hôtel, réinventé par le QR code" />
-    <meta property="og:description" content="Démo interactive : portail chambre par QR code, dashboard réception, check-in en ligne et room service." />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏨</text></svg>" />
-    <title>Wegemo Hôtel — L'hôtel, réinventé par le QR code</title>
+    <meta property="og:title" content="Well Done — Le smash burger, commandé au QR code" />
+    <meta property="og:description" content="Le client scanne le QR de sa table, compose son burger et paie depuis son téléphone. La cuisine reçoit la commande dans la seconde." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍔</text></svg>" />
+    <title>Well Done — Le smash burger, commandé au QR code</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
