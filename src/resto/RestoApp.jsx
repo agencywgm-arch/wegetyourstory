@@ -113,8 +113,6 @@ function Landing({ onDemo }) {
 
         <div style={{ ...FF, fontSize: 13, color: C.textTertiary, textAlign: "center", marginTop: 34, lineHeight: 1.7 }}>
           👻 {BRAND.snapchat} · 📸 {BRAND.instagram}
-          <br />
-          <a href="./hotel" style={{ color: C.textTertiary }}>Voir aussi la démo hôtelière Wegemo →</a>
         </div>
       </section>
     </div>

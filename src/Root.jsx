@@ -28,6 +28,30 @@ function parseRoute() {
   return { slug: null, num: null };
 }
 
+/* Les deux verticales sont des produits distincts : elles ne doivent jamais
+   partager ni titre d'onglet, ni favicon, ni données. */
+const IDENTITY = {
+  resto: {
+    title: "Well Done — Le smash burger, commandé au QR code",
+    emoji: "🍔",
+  },
+  hotel: {
+    title: "Wegemo Hôtel — L'hôtel, réinventé par le QR code",
+    emoji: "🏨",
+  },
+};
+
+function applyIdentity(kind) {
+  const id = IDENTITY[kind];
+  document.title = id.title;
+  const icon = document.querySelector("link[rel='icon']");
+  if (icon) {
+    icon.href =
+      "data:image/svg+xml," +
+      `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${id.emoji}</text></svg>`;
+  }
+}
+
 function Routed() {
   const [route, setRoute] = useState(parseRoute);
   const [scanId, setScanId] = useState(null);
@@ -41,6 +65,10 @@ function Routed() {
       window.removeEventListener("hashchange", on);
     };
   }, []);
+
+  useEffect(() => {
+    applyIdentity(route.slug === "demo-hotel" ? "hotel" : "resto");
+  }, [route.slug]);
 
   // Un scan de QR est enregistré une fois par ouverture du portail.
   useEffect(() => {
