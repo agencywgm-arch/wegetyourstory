@@ -1,67 +1,27 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { W, FONT, display, label, glass, goldText } from "./theme.js";
+import { Screen, Panel, Btn, Chip, Field, Select, Sheet, Stepper, SectionLabel, Empty } from "./ui.jsx";
+import { Logo, Tagline, BurgerGlyph } from "./Logo.jsx";
 import {
-  C, FF, fmtEuro, uid, useTick, useToast,
-  Surface, Btn, Tag, InputField, Stepper, Modal, SectionTitle, playBeep,
-} from "../shared/ui.jsx";
-import {
-  BRAND, CATEGORIES, MODE_META, STATUS_META, DELIVERY_ZONES, ALL_CITIES,
-  zoneForCity, applyPromo, readMenu, readOrders, placeOrder, readCart, writeCart,
+  BRAND, CATEGORIES, MODE_META, STATUS_META, DELIVERY_ZONES,
+  zoneForCity, applyPromo, readMenu, placeOrder, readCart, writeCart,
   linkScanToOrder, useOrders,
 } from "./data.js";
-import { readLS, writeLS } from "../shared/ui.jsx";
+import { fmtEuro, uid, useTick, useToast, playBeep, readLS, writeLS } from "../shared/ui.jsx";
+import { Icon, MODE_ICON } from "./icons.jsx";
 
 const KEY_TRACK = "wgm_resto_track";
 
 /* ==========================================================================
-   PORTAIL CLIENT WELL DONE — /r/well-done/t/{table}
-   Choix du mode, carte, composition, panier, paiement, suivi temps réel.
+   PORTAIL CLIENT — /r/well-done/t/{table}
    ========================================================================== */
-
-/* ----------------------- Identité de marque ----------------------- */
-
-export function WDLogo({ size = 34, light }) {
-  const ink = light ? "#FFF" : BRAND.ink;
-  return (
-    <div style={{ ...FF, lineHeight: 0.88, userSelect: "none" }} translate="no">
-      <div style={{ fontSize: size, fontWeight: 900, color: BRAND.gold, letterSpacing: size * 0.08 }}>
-        WELL
-      </div>
-      <div style={{ fontSize: size, fontWeight: 900, color: ink, letterSpacing: size * 0.06, display: "flex", alignItems: "center", gap: size * 0.04 }}>
-        <span>D</span>
-        <span style={{ fontSize: size * 0.72, transform: "translateY(-4%)" }}>🍔</span>
-        <span>NE</span>
-      </div>
-      <div style={{ fontSize: size * 0.2, fontWeight: 700, color: light ? "rgba(255,255,255,.7)" : C.textSecondary, letterSpacing: size * 0.1, marginTop: size * 0.16 }}>
-        {BRAND.tagline}
-      </div>
-    </div>
-  );
-}
-
-function AngusStamp({ style }) {
-  return (
-    <div
-      style={{
-        ...FF, border: `2.5px solid ${BRAND.green}`, color: BRAND.green,
-        borderRadius: 6, padding: "5px 10px", fontSize: 10.5, fontWeight: 900,
-        letterSpacing: 1.2, transform: "rotate(-6deg)", textTransform: "uppercase",
-        display: "inline-block", ...style,
-      }}
-    >
-      Black Angus Beef
-    </div>
-  );
-}
 
 /* ----------------------- Options composables ----------------------- */
 
 const visibleGroups = (item, sel) =>
-  (item.options || []).filter(
-    (g) => !g.dependsOn || sel[g.dependsOn.key] === g.dependsOn.value
-  );
+  (item.options || []).filter((g) => !g.dependsOn || sel[g.dependsOn.key] === g.dependsOn.value);
 
-const valOf = (g, sel) =>
-  g.type === "single" ? sel[g.key] ?? g.choices[0].id : sel[g.key] || [];
+const valOf = (g, sel) => (g.type === "single" ? sel[g.key] ?? g.choices[0].id : sel[g.key] || []);
 
 function optionsPrice(item, sel) {
   return visibleGroups(item, sel).reduce((sum, g) => {
@@ -69,10 +29,7 @@ function optionsPrice(item, sel) {
       const c = g.choices.find((x) => x.id === valOf(g, sel));
       return sum + (c?.price || 0);
     }
-    return sum + valOf(g, sel).reduce((s, id) => {
-      const c = g.choices.find((x) => x.id === id);
-      return s + (c?.price || 0);
-    }, 0);
+    return sum + valOf(g, sel).reduce((s, id) => s + (g.choices.find((x) => x.id === id)?.price || 0), 0);
   }, 0);
 }
 
@@ -81,7 +38,7 @@ function optionLabels(item, sel) {
   visibleGroups(item, sel).forEach((g) => {
     if (g.type === "single") {
       const c = g.choices.find((x) => x.id === valOf(g, sel));
-      // « Seul » est l'option par défaut : inutile de l'afficher en cuisine.
+      // « Seul » est la valeur par défaut : inutile de l'imprimer en cuisine.
       if (c && c.id !== "seul") out.push(c.label);
     } else {
       valOf(g, sel).forEach((id) => {
@@ -95,96 +52,124 @@ function optionLabels(item, sel) {
 
 /* ----------------------- En-tête ----------------------- */
 
-function PortalHeader({ table, mode, onBack, right }) {
+function Bar({ onBack, mode, table, right }) {
   return (
-    <div
+    <header
       style={{
-        position: "sticky", top: 0, zIndex: 50, background: "rgba(255,255,255,.92)",
-        backdropFilter: "blur(14px)", borderBottom: `1px solid ${C.border}`,
-        padding: "12px 16px", display: "flex", alignItems: "center", gap: 12,
+        position: "sticky", top: "var(--wd-top, 0px)", zIndex: 60, padding: "12px 16px",
+        background: "rgba(10,26,13,.8)", backdropFilter: "blur(20px)",
+        borderBottom: `1px solid ${W.line}`, display: "flex", alignItems: "center", gap: 12,
       }}
     >
       {onBack && (
         <button
           onClick={onBack}
-          style={{ ...FF, border: "none", background: C.surfaceAlt, borderRadius: 999, width: 34, height: 34, fontSize: 15, cursor: "pointer", color: C.text, flexShrink: 0 }}
           aria-label="Retour"
+          style={{
+            ...FONT, border: `1px solid ${W.lineSoft}`, background: "rgba(0,0,0,.3)", borderRadius: 999,
+            width: 36, height: 36, fontSize: 16, cursor: "pointer", color: W.text, flexShrink: 0,
+          }}
         >
           ←
         </button>
       )}
-      <WDLogo size={19} />
-      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+      <Logo size={15} inline />
+      <span style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
         {right}
-        {table && !mode && <Tag color={BRAND.green}>Table {table}</Tag>}
         {mode && (
-          <Tag color={BRAND.green}>
-            {MODE_META[mode].emoji} {MODE_META[mode].label}
+          <Chip tone="gold">
+            <Icon name={MODE_ICON[mode]} size={13} /> {MODE_META[mode].label}
             {mode === "sur_place" && table ? ` · T${table}` : ""}
-          </Tag>
+          </Chip>
         )}
-      </div>
-    </div>
+      </span>
+    </header>
   );
 }
 
-/* ----------------------- 1. Choix du mode ----------------------- */
+/* ----------------------- 1. Mode de commande ----------------------- */
 
 function ModeChoice({ table, onPick }) {
   const modes = [
-    { id: "sur_place", title: "Sur place", sub: table ? `Service à la table ${table}` : "Service à table", emoji: "🍽️", disabled: !table },
-    { id: "emporter", title: "À emporter", sub: "Prêt en ~15 min au comptoir", emoji: "🥡" },
-    { id: "livraison", title: "Livraison", sub: "Minimum selon la zone", emoji: "🛵" },
+    { id: "sur_place", title: "Sur place", sub: table ? `Service à la table ${table}` : "Scannez le QR d'une table", icon: "dinein", off: !table },
+    { id: "emporter", title: "À emporter", sub: "Prêt en ~15 min au comptoir", icon: "takeaway" },
+    { id: "livraison", title: "Livraison", sub: "Minimum de commande selon la zone", icon: "delivery" },
   ];
+
   return (
-    <div className="wgm-view" style={{ padding: "28px 18px 40px", maxWidth: 520, margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <WDLogo size={40} />
-        <AngusStamp style={{ marginTop: 8 }} />
-      </div>
-
-      <div style={{ ...FF, fontSize: 24, fontWeight: 900, color: C.text, marginTop: 30 }}>
-        Bienvenue 👋
-      </div>
-      <div style={{ ...FF, fontSize: 15, color: C.textSecondary, marginTop: 6, lineHeight: 1.5 }}>
-        Commandez en quelques secondes, sans installer d'application.
-      </div>
-
-      <div style={{ display: "grid", gap: 12, marginTop: 24 }}>
-        {modes.map((m) => (
-          <Surface
-            key={m.id}
-            className="wgm-tile"
-            onClick={() => !m.disabled && onPick(m.id)}
-            style={{
-              display: "flex", alignItems: "center", gap: 15, cursor: m.disabled ? "default" : "pointer",
-              opacity: m.disabled ? 0.42 : 1, padding: 17,
-            }}
-          >
-            <span style={{ fontSize: 30 }}>{m.emoji}</span>
-            <span style={{ flex: 1 }}>
-              <span style={{ ...FF, display: "block", fontSize: 16.5, fontWeight: 800, color: C.text }}>{m.title}</span>
-              <span style={{ ...FF, display: "block", fontSize: 13, color: C.textSecondary, marginTop: 2 }}>
-                {m.disabled ? "Scannez le QR d'une table" : m.sub}
-              </span>
-            </span>
-            {!m.disabled && <span style={{ ...FF, fontSize: 20, color: C.textTertiary }}>›</span>}
-          </Surface>
-        ))}
-      </div>
-
-      <Surface style={{ marginTop: 20, background: BRAND.green + "12", border: `1px solid ${BRAND.green}33` }}>
-        <div style={{ ...FF, fontSize: 13, fontWeight: 800, color: BRAND.green, marginBottom: 8 }}>
-          🛵 Minimum de livraison selon zone
-        </div>
-        {DELIVERY_ZONES.map((z) => (
-          <div key={z.id} style={{ ...FF, fontSize: 12.5, color: C.textSecondary, marginBottom: 4, lineHeight: 1.45 }}>
-            <b style={{ color: C.text }} translate="no">{z.label} (min. {fmtEuro(z.min)})</b>
-            {z.cities.length ? ` — ${z.cities.join(", ")}` : ""}
+    <Screen>
+      <div className="wd-view" style={{ maxWidth: 540, margin: "0 auto", padding: "40px 20px 48px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <Logo size={40} />
+            <div style={{ marginTop: 14 }}><Tagline size={9.5} /></div>
           </div>
-        ))}
-      </Surface>
-    </div>
+          {table && (
+            <div style={{ ...glass(2), padding: "12px 16px", borderRadius: 18, textAlign: "center" }}>
+              <div style={{ ...label(9), color: W.textDim }}>Table</div>
+              <div style={{ ...display(26), ...goldText, marginTop: 4 }} translate="no">{table}</div>
+            </div>
+          )}
+        </div>
+
+        <h1 style={{ ...display(34), color: W.text, marginTop: 44 }}>
+          Bienvenue.<br />
+          <span style={goldText}>Commandez en 30 secondes.</span>
+        </h1>
+        <p style={{ ...FONT, fontSize: 15, color: W.textSoft, marginTop: 14, lineHeight: 1.6 }}>
+          Composez votre burger, payez depuis votre téléphone et suivez la préparation
+          en direct. Aucune application à installer.
+        </p>
+
+        <div style={{ display: "grid", gap: 12, marginTop: 30 }}>
+          {modes.map((m) => (
+            <Panel
+              key={m.id}
+              hover={!m.off}
+              pad={18}
+              onClick={m.off ? undefined : () => onPick(m.id)}
+              style={{ display: "flex", alignItems: "center", gap: 16, opacity: m.off ? 0.4 : 1 }}
+            >
+              <span
+                style={{
+                  width: 46, height: 46, borderRadius: 14, flexShrink: 0, color: W.gold,
+                  background: "rgba(198,154,99,.11)", border: `1px solid ${W.line}`,
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                }}
+              >
+                <Icon name={m.icon} size={22} />
+              </span>
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ ...display(19), color: W.text, display: "block" }}>{m.title}</span>
+                <span style={{ ...FONT, fontSize: 13, color: W.textSoft, display: "block", marginTop: 4 }}>{m.sub}</span>
+              </span>
+              {!m.off && <span style={{ ...display(20), color: W.gold }}>→</span>}
+            </Panel>
+          ))}
+        </div>
+
+        <Panel pad={18} style={{ marginTop: 22 }}>
+          <div style={{ ...label(10.5), color: W.gold, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}><Icon name="delivery" size={15} /> Livraison — minimum par zone</div>
+          {DELIVERY_ZONES.map((z, i) => (
+            <div
+              key={z.id}
+              style={{
+                display: "flex", justifyContent: "space-between", gap: 12, padding: "9px 0",
+                borderBottom: i < DELIVERY_ZONES.length - 1 ? `1px solid ${W.lineSoft}` : "none",
+              }}
+            >
+              <span style={{ ...FONT, fontSize: 12.5, color: W.textSoft, lineHeight: 1.45, flex: 1 }}>
+                <b style={{ color: W.text }}>{z.label}</b>
+                {z.cities.length ? ` — ${z.cities.join(", ")}` : " — toute autre commune"}
+              </span>
+              <b style={{ ...FONT, fontSize: 13, color: W.gold, whiteSpace: "nowrap" }} translate="no">
+                {fmtEuro(z.min)}
+              </b>
+            </div>
+          ))}
+        </Panel>
+      </div>
+    </Screen>
   );
 }
 
@@ -192,170 +177,209 @@ function ModeChoice({ table, onPick }) {
 
 function MenuView({ menu, mode, table, cart, openItem, goCart, back }) {
   const [cat, setCat] = useState(CATEGORIES[0].id);
+  const refs = useRef({});
   const count = cart.reduce((s, l) => s + l.qty, 0);
   const total = cart.reduce((s, l) => s + l.total, 0);
-  const refs = useRef({});
 
-  const jump = (id) => {
-    setCat(id);
-    refs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  // La catégorie active suit le défilement.
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const vis = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (vis[0]) setCat(vis[0].target.dataset.cat);
+      },
+      { rootMargin: "-140px 0px -70% 0px" }
+    );
+    Object.values(refs.current).forEach((el) => el && obs.observe(el));
+    return () => obs.disconnect();
+  }, [menu]);
 
   return (
-    <div style={{ paddingBottom: count ? 96 : 24 }}>
-      <PortalHeader table={table} mode={mode} onBack={back} />
+    <Screen>
+      <Bar onBack={back} mode={mode} table={table} />
 
-      {/* Onglets de catégories */}
-      <div
+      <nav
+        className="wd-scroll"
         style={{
-          position: "sticky", top: 59, zIndex: 40, background: "rgba(255,255,255,.94)",
-          backdropFilter: "blur(14px)", borderBottom: `1px solid ${C.border}`,
-          display: "flex", gap: 8, overflowX: "auto", padding: "10px 16px",
+          position: "sticky", top: "calc(var(--wd-top, 0px) + 61px)", zIndex: 55, display: "flex", gap: 8, overflowX: "auto",
+          padding: "12px 16px", background: "rgba(10,26,13,.86)", backdropFilter: "blur(20px)",
+          borderBottom: `1px solid ${W.line}`,
         }}
       >
-        {CATEGORIES.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => jump(c.id)}
-            style={{
-              ...FF, flexShrink: 0, borderRadius: 999, padding: "8px 14px", fontSize: 13.5, fontWeight: 800,
-              cursor: "pointer", border: `1px solid ${cat === c.id ? BRAND.green : C.border}`,
-              background: cat === c.id ? BRAND.green : C.surface,
-              color: cat === c.id ? "#FFF" : C.textSecondary,
-            }}
-          >
-            {c.emoji} {c.label}
-          </button>
-        ))}
-      </div>
+        {CATEGORIES.map((c) => {
+          const on = cat === c.id;
+          return (
+            <button
+              key={c.id}
+              onClick={() => refs.current[c.id]?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              style={{
+                ...FONT, flexShrink: 0, borderRadius: 999, padding: "9px 15px", fontSize: 13, fontWeight: 800,
+                cursor: "pointer", whiteSpace: "nowrap",
+                border: `1px solid ${on ? "transparent" : W.lineSoft}`,
+                background: on ? `linear-gradient(135deg, ${W.goldLt}, ${W.gold})` : "rgba(255,255,255,.03)",
+                color: on ? "#2A1B08" : W.textSoft,
+              }}
+            >
+              {c.emoji} {c.label}
+            </button>
+          );
+        })}
+      </nav>
 
-      <div className="wgm-view" style={{ maxWidth: 560, margin: "0 auto", padding: "4px 16px 20px" }}>
+      <div className="wd-view" style={{ maxWidth: 620, margin: "0 auto", padding: `8px 16px ${count ? 110 : 40}px` }}>
         {CATEGORIES.map((c) => {
           const items = menu.filter((m) => m.category === c.id && m.available !== false);
           if (!items.length) return null;
           return (
-            <section key={c.id} ref={(el) => (refs.current[c.id] = el)} style={{ scrollMarginTop: 112 }}>
-              <SectionTitle style={{ color: C.text, fontSize: 15, textTransform: "none", letterSpacing: 0 }}>
-                {c.emoji} {c.label}
-              </SectionTitle>
+            <section
+              key={c.id}
+              data-cat={c.id}
+              ref={(el) => (refs.current[c.id] = el)}
+              style={{ scrollMarginTop: "calc(var(--wd-top, 0px) + 124px)", paddingTop: 26 }}
+            >
+              <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4 }}>
+                <h2 style={{ ...display(23), color: W.text, margin: 0 }}>{c.emoji} {c.label}</h2>
+              </div>
               {c.note && (
-                <div style={{ ...FF, fontSize: 12.5, fontWeight: 700, color: BRAND.green, marginTop: -6, marginBottom: 10 }} translate="no">
+                <div style={{ ...FONT, fontSize: 12.5, fontWeight: 800, color: W.gold, marginBottom: 14 }} translate="no">
                   {c.note}
                 </div>
               )}
-              <div style={{ display: "grid", gap: 10 }}>
+
+              <div style={{ display: "grid", gap: 10, marginTop: c.note ? 0 : 14 }}>
                 {items.map((m) => (
-                  <Surface
-                    key={m.id}
-                    className="wgm-tile"
-                    onClick={() => openItem(m)}
-                    style={{ display: "flex", gap: 13, cursor: "pointer", padding: 15, alignItems: "flex-start" }}
-                  >
-                    <span style={{ fontSize: 27, lineHeight: 1 }}>{m.emoji}</span>
+                  <Panel key={m.id} hover pad={16} onClick={() => openItem(m)} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                    <span
+                      style={{
+                        fontSize: 24, flexShrink: 0, width: 46, height: 46, borderRadius: 14,
+                        background: "rgba(198,154,99,.11)", border: `1px solid ${W.line}`,
+                        display: "inline-flex", alignItems: "center", justifyContent: "center",
+                      }}
+                    >
+                      {m.emoji}
+                    </span>
                     <span style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
-                        <b style={{ ...FF, fontSize: 15.5, fontWeight: 800, color: C.text }}>{m.name}</b>
-                        {m.badge && <Tag color={BRAND.gold} style={{ fontSize: 10.5, padding: "2px 8px" }}>{m.badge}</Tag>}
+                      <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <b style={{ ...display(17), color: W.text }}>{m.name}</b>
+                        {m.badge && <Chip tone="orange" style={{ fontSize: 10.5, padding: "2px 8px" }}>{m.badge}</Chip>}
                       </span>
                       {m.desc && (
-                        <span style={{ ...FF, display: "block", fontSize: 12.8, color: C.textSecondary, marginTop: 4, lineHeight: 1.45 }}>
+                        <span style={{ ...FONT, display: "block", fontSize: 12.8, color: W.textSoft, marginTop: 5, lineHeight: 1.5 }}>
                           {m.desc}
                         </span>
                       )}
                     </span>
-                    <span style={{ ...FF, fontSize: 15, fontWeight: 900, color: C.text, flexShrink: 0 }} translate="no">
-                      {fmtEuro(m.price)}
-                    </span>
-                  </Surface>
+                    <b style={{ ...display(17), ...goldText, flexShrink: 0 }} translate="no">{fmtEuro(m.price)}</b>
+                  </Panel>
                 ))}
               </div>
             </section>
           );
         })}
 
-        <div style={{ ...FF, fontSize: 12, color: C.textTertiary, textAlign: "center", marginTop: 26, lineHeight: 1.6 }}>
-          Sauces incluses : ketchup, moutarde, mayonnaise, barbecue.<br />
-          Snap {BRAND.snapchat} · Insta {BRAND.instagram}
+        <div style={{ ...FONT, fontSize: 12, color: W.textDim, textAlign: "center", marginTop: 34, lineHeight: 1.7 }}>
+          Sauces incluses : ketchup, moutarde, mayonnaise, barbecue.
+          <br />👻 {BRAND.snapchat} · 📸 {BRAND.instagram}
         </div>
       </div>
 
       {count > 0 && (
-        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, padding: "12px 16px calc(12px + env(safe-area-inset-bottom))", background: "rgba(255,255,255,.94)", backdropFilter: "blur(14px)", borderTop: `1px solid ${C.border}`, zIndex: 60 }}>
-          <div style={{ maxWidth: 560, margin: "0 auto" }}>
-            <Btn full size="lg" onClick={goCart} style={{ background: BRAND.green, color: "#FFF" }}>
-              <span style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
-                <span>🛒 Voir le panier · {count} article{count > 1 ? "s" : ""}</span>
+        <div
+          style={{
+            position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 70,
+            padding: "14px 16px calc(14px + env(safe-area-inset-bottom))",
+            background: "rgba(10,26,13,.9)", backdropFilter: "blur(20px)", borderTop: `1px solid ${W.line}`,
+          }}
+        >
+          <div style={{ maxWidth: 620, margin: "0 auto" }}>
+            <Btn full size="lg" onClick={goCart}>
+              <span style={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 9 }}><Icon name="cart" size={17} /> Panier · {count} article{count > 1 ? "s" : ""}</span>
                 <span translate="no">{fmtEuro(total)}</span>
               </span>
             </Btn>
           </div>
         </div>
       )}
-    </div>
+    </Screen>
   );
 }
 
-/* ----------------------- 3. Composition d'un article ----------------------- */
+/* ----------------------- 3. Composition ----------------------- */
 
-function ItemComposer({ item, onClose, onAdd }) {
+function Composer({ item, onClose, onAdd }) {
   const [sel, setSel] = useState({});
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
 
   const groups = visibleGroups(item, sel);
   const unit = item.price + optionsPrice(item, sel);
-  const labels = optionLabels(item, sel);
 
-  const toggleMulti = (g, id) => {
+  const toggle = (g, id) =>
     setSel((s) => {
       const cur = s[g.key] || [];
       if (cur.includes(id)) return { ...s, [g.key]: cur.filter((x) => x !== id) };
       if (g.max && cur.length >= g.max) return s;
       return { ...s, [g.key]: [...cur, id] };
     });
-  };
 
   return (
-    <Modal title={`${item.emoji} ${item.name}`} onClose={onClose} maxWidth={460}>
-      {item.desc && (
-        <div style={{ ...FF, fontSize: 13.5, color: C.textSecondary, lineHeight: 1.5, marginBottom: 6 }}>
-          {item.desc}
+    <Sheet
+      title={`${item.emoji} ${item.name}`}
+      sub={item.desc}
+      onClose={onClose}
+      footer={
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <Stepper value={qty} onChange={setQty} />
+          <Btn
+            size="lg"
+            style={{ flex: 1 }}
+            onClick={() =>
+              onAdd({
+                key: uid(), item_id: item.id, name: item.name, emoji: item.emoji, qty, unit,
+                total: Math.round(unit * qty * 100) / 100,
+                opts: optionLabels(item, sel), note: note.trim(),
+              })
+            }
+          >
+            Ajouter · <span translate="no">{fmtEuro(unit * qty)}</span>
+          </Btn>
         </div>
-      )}
-
+      }
+    >
       {groups.map((g) => (
-        <div key={g.key} style={{ marginTop: 18 }}>
-          <div style={{ ...FF, fontSize: 13, fontWeight: 800, color: C.text }}>
-            {g.label}
-            {g.hint && (
-              <span style={{ fontWeight: 600, color: C.textTertiary }} translate="no"> · {g.hint}</span>
-            )}
+        <div key={g.key} style={{ marginBottom: 22 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 10 }}>
+            <span style={{ ...label(10.5), color: W.gold }}>{g.label}</span>
+            {g.hint && <span style={{ ...FONT, fontSize: 11.5, color: W.textDim }} translate="no">{g.hint}</span>}
             {g.max && (
-              <span style={{ fontWeight: 600, color: C.textTertiary }}> · {(sel[g.key] || []).length}/{g.max}</span>
+              <span style={{ ...FONT, fontSize: 11.5, color: W.textDim, marginLeft: "auto" }} translate="no">
+                {(sel[g.key] || []).length}/{g.max}
+              </span>
             )}
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 9 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {g.choices.map((c) => {
-              const on = g.type === "single"
-                ? valOf(g, sel) === c.id
-                : (sel[g.key] || []).includes(c.id);
+              const on = g.type === "single" ? valOf(g, sel) === c.id : (sel[g.key] || []).includes(c.id);
               return (
                 <button
                   key={c.id}
-                  onClick={() =>
-                    g.type === "single"
-                      ? setSel((s) => ({ ...s, [g.key]: c.id }))
-                      : toggleMulti(g, c.id)
-                  }
+                  onClick={() => (g.type === "single" ? setSel((s) => ({ ...s, [g.key]: c.id })) : toggle(g, c.id))}
                   style={{
-                    ...FF, borderRadius: 999, padding: "8px 13px", fontSize: 13, fontWeight: 700, cursor: "pointer",
-                    border: `1.5px solid ${on ? BRAND.green : C.borderStrong}`,
-                    background: on ? BRAND.green + "16" : C.surface,
-                    color: on ? BRAND.green : C.textSecondary,
+                    ...FONT, borderRadius: 13, padding: "10px 14px", fontSize: 13.5, fontWeight: 700, cursor: "pointer",
+                    border: `1px solid ${on ? W.green : W.lineSoft}`,
+                    background: on ? "rgba(76,164,53,.16)" : "rgba(255,255,255,.03)",
+                    color: on ? W.greenLt : W.textSoft,
+                    display: "inline-flex", alignItems: "center", gap: 7,
                   }}
                 >
+                  {on && <span style={{ fontSize: 11 }}>✓</span>}
                   {c.label}
-                  {c.price > 0 && <span translate="no"> +{fmtEuro(c.price)}</span>}
+                  {c.price > 0 && (
+                    <span style={{ color: on ? W.greenLt : W.gold, fontWeight: 800 }} translate="no">
+                      +{fmtEuro(c.price)}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -363,38 +387,8 @@ function ItemComposer({ item, onClose, onAdd }) {
         </div>
       ))}
 
-      <div style={{ marginTop: 18 }}>
-        <InputField
-          label="Remarque pour la cuisine"
-          value={note}
-          onChange={setNote}
-          placeholder="Sans oignon, bien cuit…"
-        />
-      </div>
-
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 22, flexWrap: "wrap" }}>
-        <Stepper value={qty} onChange={setQty} max={20} />
-        <Btn
-          size="lg"
-          onClick={() => {
-            onAdd({
-              key: uid(),
-              item_id: item.id,
-              name: item.name,
-              emoji: item.emoji,
-              qty,
-              unit,
-              total: Math.round(unit * qty * 100) / 100,
-              opts: labels,
-              note: note.trim(),
-            });
-          }}
-          style={{ background: BRAND.green, color: "#FFF", flex: 1, minWidth: 180 }}
-        >
-          Ajouter · <span translate="no">{fmtEuro(unit * qty)}</span>
-        </Btn>
-      </div>
-    </Modal>
+      <Field label="Remarque pour la cuisine" value={note} onChange={setNote} placeholder="Sans oignon, bien cuit…" />
+    </Sheet>
   );
 }
 
@@ -403,74 +397,72 @@ function ItemComposer({ item, onClose, onAdd }) {
 function CartView({ cart, setCart, mode, table, back, goCheckout }) {
   const subtotal = cart.reduce((s, l) => s + l.total, 0);
   const setQty = (key, qty) =>
-    setCart(
-      cart
-        .map((l) => (l.key === key ? { ...l, qty, total: Math.round(l.unit * qty * 100) / 100 } : l))
-        .filter((l) => l.qty > 0)
-    );
+    setCart(cart.map((l) => (l.key === key ? { ...l, qty, total: Math.round(l.unit * qty * 100) / 100 } : l)).filter((l) => l.qty > 0));
 
   return (
-    <div>
-      <PortalHeader table={table} mode={mode} onBack={back} />
-      <div className="wgm-view" style={{ maxWidth: 520, margin: "0 auto", padding: "18px 16px 40px" }}>
-        <div style={{ ...FF, fontSize: 22, fontWeight: 900, color: C.text, marginBottom: 16 }}>🛒 Votre panier</div>
+    <Screen>
+      <Bar onBack={back} mode={mode} table={table} />
+      <div className="wd-view" style={{ maxWidth: 560, margin: "0 auto", padding: "24px 16px 44px" }}>
+        <h1 style={{ ...display(28), color: W.text, marginBottom: 20 }}>Votre panier</h1>
 
-        {cart.length === 0 && (
-          <Surface style={{ textAlign: "center", padding: 30 }}>
-            <div style={{ ...FF, color: C.textSecondary, fontSize: 14 }}>Votre panier est vide.</div>
-            <Btn onClick={back} style={{ marginTop: 14 }}>Voir la carte</Btn>
-          </Surface>
-        )}
-
-        {cart.map((l) => (
-          <Surface key={l.key} style={{ marginBottom: 10, padding: 15 }}>
-            <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-              <span style={{ fontSize: 24 }}>{l.emoji}</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ ...FF, fontSize: 15, fontWeight: 800, color: C.text }}>{l.name}</div>
-                {l.opts.length > 0 && (
-                  <div style={{ ...FF, fontSize: 12.5, color: C.textSecondary, marginTop: 3, lineHeight: 1.45 }}>
-                    {l.opts.join(" · ")}
-                  </div>
-                )}
-                {l.note && (
-                  <div style={{ ...FF, fontSize: 12.5, color: BRAND.gold, marginTop: 3, fontWeight: 700 }}>
-                    ✏️ {l.note}
-                  </div>
-                )}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10, gap: 10 }}>
-                  <Stepper value={l.qty} onChange={(q) => setQty(l.key, q)} min={0} max={20} />
-                  <b style={{ ...FF, fontSize: 15, fontWeight: 900, color: C.text }} translate="no">{fmtEuro(l.total)}</b>
-                </div>
-              </div>
-            </div>
-          </Surface>
-        ))}
-
-        {cart.length > 0 && (
+        {cart.length === 0 ? (
+          <Panel>
+            <Empty icon={<Icon name="cart" size={32} />} title="Panier vide" sub="Ajoutez un burger pour commencer." />
+            <Btn full onClick={back}>Voir la carte</Btn>
+          </Panel>
+        ) : (
           <>
-            <Surface style={{ marginTop: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ ...FF, fontSize: 16, fontWeight: 800, color: C.text }}>Sous-total</span>
-              <span style={{ ...FF, fontSize: 20, fontWeight: 900, color: C.text }} translate="no">{fmtEuro(subtotal)}</span>
-            </Surface>
-            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-              <Btn variant="subtle" onClick={back} style={{ flex: 1 }}>Ajouter</Btn>
-              <Btn size="lg" onClick={goCheckout} style={{ flex: 2, background: BRAND.green, color: "#FFF" }}>
-                Commander →
-              </Btn>
+            <div style={{ display: "grid", gap: 10 }}>
+              {cart.map((l) => (
+                <Panel key={l.key} pad={16}>
+                  <div style={{ display: "flex", gap: 13, alignItems: "flex-start" }}>
+                    <span style={{ fontSize: 22, flexShrink: 0 }}>{l.emoji}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ ...display(17), color: W.text }}>{l.name}</div>
+                      {l.opts.length > 0 && (
+                        <div style={{ ...FONT, fontSize: 12.5, color: W.textSoft, marginTop: 4, lineHeight: 1.5 }}>{l.opts.join(" · ")}</div>
+                      )}
+                      {l.note && <div style={{ ...FONT, fontSize: 12.5, color: W.orange, marginTop: 4, fontWeight: 700 }}>✏️ {l.note}</div>}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12, gap: 10 }}>
+                        <Stepper value={l.qty} onChange={(q) => setQty(l.key, q)} min={0} />
+                        <b style={{ ...display(17), ...goldText }} translate="no">{fmtEuro(l.total)}</b>
+                      </div>
+                    </div>
+                  </div>
+                </Panel>
+              ))}
+            </div>
+
+            <Panel pad={18} style={{ marginTop: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ ...label(11), color: W.textDim }}>Sous-total</span>
+              <span style={{ ...display(26), color: W.text }} translate="no">{fmtEuro(subtotal)}</span>
+            </Panel>
+
+            <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+              <Btn variant="outline" onClick={back} style={{ flex: 1 }}>Ajouter</Btn>
+              <Btn size="lg" onClick={goCheckout} style={{ flex: 2 }}>Commander →</Btn>
             </div>
           </>
         )}
       </div>
-    </div>
+    </Screen>
   );
 }
 
 /* ----------------------- 5. Paiement ----------------------- */
 
+function Line({ k, v, tone, big }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0" }}>
+      <span style={{ ...FONT, fontSize: big ? 15 : 13.5, fontWeight: big ? 800 : 600, color: tone || W.textSoft }}>{k}</span>
+      <span style={{ ...(big ? display(24) : FONT), fontSize: big ? 24 : 14, fontWeight: big ? 900 : 700, color: tone || W.text }} translate="no">{v}</span>
+    </div>
+  );
+}
+
 function CheckoutView({ cart, mode, table, back, onDone, toast }) {
-  const [f, setF] = useState({ name: "", phone: "", email: "", address: "", city: ALL_CITIES[0], nif: "" });
-  const [promoInput, setPromoInput] = useState("");
+  const [f, setF] = useState({ name: "", phone: "", email: "", address: "", city: DELIVERY_ZONES[0].cities[0] });
+  const [code, setCode] = useState("");
   const [promo, setPromo] = useState(null);
   const [pay, setPay] = useState("carte");
   const [busy, setBusy] = useState(false);
@@ -478,17 +470,12 @@ function CheckoutView({ cart, mode, table, back, onDone, toast }) {
   const subtotal = cart.reduce((s, l) => s + l.total, 0);
   const discount = promo?.discount || 0;
   const total = Math.max(0, Math.round((subtotal - discount) * 100) / 100);
-
   const zone = mode === "livraison" ? zoneForCity(f.city) : null;
-  const belowMin = zone ? subtotal < zone.min : false;
+  const below = zone ? subtotal < zone.min : false;
 
   const tryPromo = () => {
-    const r = applyPromo(promoInput, subtotal);
-    if (!r.ok) {
-      setPromo(null);
-      toast.error(r.reason);
-      return;
-    }
+    const r = applyPromo(code, subtotal);
+    if (!r.ok) { setPromo(null); return toast.error(r.reason); }
     setPromo(r);
     toast.success(`${r.promo.label} appliqué`);
   };
@@ -497,28 +484,17 @@ function CheckoutView({ cart, mode, table, back, onDone, toast }) {
     if (!f.name.trim()) return toast.error("Votre nom est nécessaire pour l'appel en cuisine");
     if (mode === "livraison" && !f.address.trim()) return toast.error("Adresse de livraison manquante");
     if (mode === "livraison" && !f.phone.trim()) return toast.error("Téléphone nécessaire pour la livraison");
-    if (belowMin) return toast.error(`Minimum ${fmtEuro(zone.min)} en ${zone.label}`);
+    if (below) return toast.error(`Minimum ${fmtEuro(zone.min)} en ${zone.label}`);
     setBusy(true);
     // Paiement simulé : la démo ne contacte aucun service externe.
     setTimeout(() => {
       const order = placeOrder({
-        mode,
-        table: mode === "sur_place" ? table : null,
-        items: cart,
-        subtotal,
-        discount,
-        promo_code: promo?.promo.code || null,
-        total,
-        payment_method: pay,
-        paid: pay === "carte",
-        zone: zone?.label || null,
+        mode, table: mode === "sur_place" ? table : null, items: cart,
+        subtotal, discount, promo_code: promo?.promo.code || null, total,
+        payment_method: pay, paid: pay === "carte", zone: zone?.label || null,
         customer: {
-          name: f.name.trim(),
-          phone: f.phone.trim(),
-          email: f.email.trim(),
-          address: f.address.trim(),
-          city: mode === "livraison" ? f.city : "",
-          nif: f.nif.trim(),
+          name: f.name.trim(), phone: f.phone.trim(), email: f.email.trim(),
+          address: f.address.trim(), city: mode === "livraison" ? f.city : "",
         },
       });
       setBusy(false);
@@ -527,224 +503,228 @@ function CheckoutView({ cart, mode, table, back, onDone, toast }) {
   };
 
   return (
-    <div>
-      <PortalHeader table={table} mode={mode} onBack={back} />
-      <div className="wgm-view" style={{ maxWidth: 520, margin: "0 auto", padding: "18px 16px 40px" }}>
-        <div style={{ ...FF, fontSize: 22, fontWeight: 900, color: C.text, marginBottom: 16 }}>Finaliser</div>
+    <Screen>
+      <Bar onBack={back} mode={mode} table={table} />
+      <div className="wd-view" style={{ maxWidth: 560, margin: "0 auto", padding: "24px 16px 44px" }}>
+        <h1 style={{ ...display(28), color: W.text, marginBottom: 20 }}>Finaliser</h1>
 
-        <Surface>
-          <div style={{ display: "grid", gap: 12 }}>
-            <InputField label="Nom" value={f.name} onChange={(v) => setF({ ...f, name: v })} placeholder="Prénom ou nom" required />
-            <InputField label="Téléphone" value={f.phone} onChange={(v) => setF({ ...f, phone: v })} placeholder="06 12 34 56 78" type="tel" required={mode === "livraison"} />
-            <InputField label="Email (reçu numérique)" value={f.email} onChange={(v) => setF({ ...f, email: v })} placeholder="vous@email.com" type="email" />
+        <Panel>
+          <div style={{ display: "grid", gap: 14 }}>
+            <Field label="Nom" value={f.name} onChange={(v) => setF({ ...f, name: v })} placeholder="Prénom ou nom" required />
+            <Field label="Téléphone" type="tel" value={f.phone} onChange={(v) => setF({ ...f, phone: v })} placeholder="06 12 34 56 78" required={mode === "livraison"} />
+            <Field label="Email (reçu numérique)" type="email" value={f.email} onChange={(v) => setF({ ...f, email: v })} placeholder="vous@email.com" />
             {mode === "livraison" && (
               <>
-                <InputField label="Adresse" value={f.address} onChange={(v) => setF({ ...f, address: v })} placeholder="12 rue des Lilas" required />
-                <label style={{ display: "block" }}>
-                  <div style={{ ...FF, fontSize: 12.5, fontWeight: 700, color: C.textSecondary, marginBottom: 6 }}>Commune</div>
-                  <select
-                    value={f.city}
-                    onChange={(e) => setF({ ...f, city: e.target.value })}
-                    style={{ ...FF, width: "100%", padding: "11px 14px", borderRadius: 12, border: `1px solid ${C.borderStrong}`, background: C.surface, fontSize: 15, color: C.text }}
-                  >
-                    {DELIVERY_ZONES.map((z) =>
-                      z.cities.length ? (
-                        <optgroup key={z.id} label={`${z.label} — min. ${z.min} €`}>
-                          {z.cities.map((c) => <option key={c} value={c}>{c}</option>)}
-                        </optgroup>
-                      ) : (
-                        <option key={z.id} value="Hors zone">Autre commune (hors zone — min. 50 €)</option>
-                      )
-                    )}
-                  </select>
-                </label>
+                <Field label="Adresse" value={f.address} onChange={(v) => setF({ ...f, address: v })} placeholder="12 rue des Lilas" required />
+                <Select label="Commune" value={f.city} onChange={(v) => setF({ ...f, city: v })}>
+                  {DELIVERY_ZONES.map((z) =>
+                    z.cities.length ? (
+                      <optgroup key={z.id} label={`${z.label} — min. ${z.min} €`}>
+                        {z.cities.map((c) => <option key={c} value={c}>{c}</option>)}
+                      </optgroup>
+                    ) : (
+                      <option key={z.id} value="Hors zone">Autre commune (hors zone — min. 50 €)</option>
+                    )
+                  )}
+                </Select>
               </>
             )}
           </div>
-        </Surface>
+        </Panel>
 
-        {mode === "livraison" && (
-          <Surface style={{ marginTop: 12, background: belowMin ? C.accent + "12" : BRAND.green + "12", border: `1px solid ${belowMin ? C.accent : BRAND.green}33` }}>
-            <div style={{ ...FF, fontSize: 13, fontWeight: 800, color: belowMin ? C.accent : BRAND.green }} translate="no">
-              {belowMin
+        {zone && (
+          <Panel
+            pad={15}
+            style={{
+              marginTop: 12,
+              borderColor: below ? "rgba(255,77,77,.45)" : "rgba(76,164,53,.4)",
+              background: below ? "rgba(255,77,77,.08)" : "rgba(76,164,53,.08)",
+            }}
+          >
+            <div style={{ ...FONT, fontSize: 13, fontWeight: 800, color: below ? W.danger : W.greenLt }} translate="no">
+              {below
                 ? `${zone.label} — il manque ${fmtEuro(zone.min - subtotal)} pour atteindre le minimum de ${fmtEuro(zone.min)}`
                 : `${zone.label} — minimum de ${fmtEuro(zone.min)} atteint ✓`}
             </div>
-          </Surface>
+          </Panel>
         )}
 
-        <SectionTitle>Code promo</SectionTitle>
+        <SectionLabel>Code promo</SectionLabel>
         <div style={{ display: "flex", gap: 8 }}>
-          <InputField value={promoInput} onChange={setPromoInput} placeholder="WELLDONE10" style={{ flex: 1 }} />
-          <Btn variant="subtle" onClick={tryPromo}>Appliquer</Btn>
+          <Field value={code} onChange={setCode} placeholder="WELLDONE10" style={{ flex: 1 }} />
+          <Btn variant="outline" onClick={tryPromo}>Appliquer</Btn>
         </div>
 
-        <SectionTitle>Paiement</SectionTitle>
+        <SectionLabel>Paiement</SectionLabel>
         <div style={{ display: "flex", gap: 10 }}>
           {[
-            { id: "carte", label: "💳 Carte", sub: "Apple Pay / Google Pay" },
-            { id: "especes", label: "💶 Espèces", sub: mode === "livraison" ? "À la livraison" : "Au comptoir" },
+            { id: "carte", t: "Carte", s: "Apple Pay / Google Pay", e: "💳" },
+            { id: "especes", t: "Espèces", s: mode === "livraison" ? "À la livraison" : "Au comptoir", e: "💶" },
           ].map((p) => (
-            <Surface
+            <Panel
               key={p.id}
+              pad={15}
               onClick={() => setPay(p.id)}
               style={{
-                flex: 1, cursor: "pointer", padding: 14, textAlign: "center",
-                border: `1.5px solid ${pay === p.id ? BRAND.green : C.border}`,
-                background: pay === p.id ? BRAND.green + "10" : C.surface,
+                flex: 1, textAlign: "center",
+                borderColor: pay === p.id ? W.green : W.line,
+                background: pay === p.id ? "rgba(76,164,53,.11)" : undefined,
               }}
             >
-              <div style={{ ...FF, fontSize: 14.5, fontWeight: 800, color: C.text }}>{p.label}</div>
-              <div style={{ ...FF, fontSize: 11.5, color: C.textSecondary, marginTop: 3 }}>{p.sub}</div>
-            </Surface>
+              <div style={{ fontSize: 19 }}>{p.e}</div>
+              <div style={{ ...display(15), color: W.text, marginTop: 7 }}>{p.t}</div>
+              <div style={{ ...FONT, fontSize: 11, color: W.textDim, marginTop: 3 }}>{p.s}</div>
+            </Panel>
           ))}
         </div>
 
-        <Surface style={{ marginTop: 18 }}>
-          <Row label="Sous-total" value={fmtEuro(subtotal)} />
-          {discount > 0 && <Row label={`Promo ${promo.promo.code}`} value={`− ${fmtEuro(discount)}`} color={BRAND.green} />}
-          <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 10, paddingTop: 10 }}>
-            <Row label="Total" value={fmtEuro(total)} big />
+        <Panel style={{ marginTop: 18 }}>
+          <Line k="Sous-total" v={fmtEuro(subtotal)} />
+          {discount > 0 && <Line k={`Promo ${promo.promo.code}`} v={`− ${fmtEuro(discount)}`} tone={W.greenLt} />}
+          <div style={{ borderTop: `1px solid ${W.lineSoft}`, marginTop: 12, paddingTop: 12 }}>
+            <Line k="Total" v={fmtEuro(total)} big />
           </div>
-        </Surface>
+        </Panel>
 
-        <Btn
-          full size="lg" disabled={busy || cart.length === 0}
-          onClick={submit}
-          style={{ marginTop: 16, background: BRAND.green, color: "#FFF" }}
-        >
+        <Btn full size="lg" disabled={busy || cart.length === 0} onClick={submit} style={{ marginTop: 18 }}>
           {busy ? "Paiement en cours…" : `Payer ${fmtEuro(total)}`}
         </Btn>
-        <div style={{ ...FF, fontSize: 11.5, color: C.textTertiary, textAlign: "center", marginTop: 10 }}>
+        <div style={{ ...FONT, fontSize: 11.5, color: W.textDim, textAlign: "center", marginTop: 12 }}>
           Démonstration — aucun paiement réel n'est effectué.
         </div>
       </div>
-    </div>
+    </Screen>
   );
 }
 
-function Row({ label, value, color, big }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "3px 0" }}>
-      <span style={{ ...FF, fontSize: big ? 16 : 13.5, fontWeight: big ? 800 : 600, color: color || C.textSecondary }}>{label}</span>
-      <span style={{ ...FF, fontSize: big ? 20 : 14, fontWeight: big ? 900 : 700, color: color || C.text }} translate="no">{value}</span>
-    </div>
-  );
-}
+/* ----------------------- 6. Suivi ----------------------- */
 
-/* ----------------------- 6. Suivi temps réel ----------------------- */
+const STEPS = ["PENDING", "PREPARING", "READY", "DONE"];
 
 function TrackView({ orderId, onNew }) {
   const [orders] = useOrders(2000);
   useTick(1000);
   const order = orders.find((o) => o.id === orderId);
-  const alerted = useRef(false);
+  const rang = useRef(false);
 
   useEffect(() => {
-    if (order?.status === "READY" && !alerted.current) {
-      alerted.current = true;
-      playBeep(880, 400);
-      setTimeout(() => playBeep(1180, 500), 450);
+    if (order?.status === "READY" && !rang.current) {
+      rang.current = true;
+      playBeep(920, 380);
+      setTimeout(() => playBeep(1240, 460), 420);
       navigator.vibrate?.([200, 90, 200, 90, 320]);
     }
   }, [order?.status]);
 
   if (!order) {
     return (
-      <div style={{ padding: 40, textAlign: "center" }}>
-        <div style={{ ...FF, color: C.textSecondary }}>Commande introuvable.</div>
-        <Btn onClick={onNew} style={{ marginTop: 14 }}>Nouvelle commande</Btn>
-      </div>
+      <Screen>
+        <Bar />
+        <Empty icon={<Icon name="orders" size={32} />} title="Commande introuvable" />
+        <div style={{ textAlign: "center" }}><Btn onClick={onNew}>Nouvelle commande</Btn></div>
+      </Screen>
     );
   }
 
-  const idx = ["PENDING", "PREPARING", "READY", "DONE"].indexOf(order.status);
+  const idx = STEPS.indexOf(order.status);
   const left = Math.max(0, Math.round((order.eta_at - Date.now()) / 60000));
   const ready = order.status === "READY" || order.status === "DONE";
 
   return (
-    <div>
-      <PortalHeader table={order.table} mode={order.mode} />
-      <div className="wgm-view" style={{ maxWidth: 520, margin: "0 auto", padding: "22px 16px 40px" }}>
-        <Surface
+    <Screen>
+      <Bar mode={order.mode} table={order.table} />
+      <div className="wd-view" style={{ maxWidth: 560, margin: "0 auto", padding: "26px 16px 44px" }}>
+        {/* État principal */}
+        <Panel
+          elev={2}
+          pad={30}
           style={{
-            textAlign: "center", padding: 26,
-            background: ready ? BRAND.green : C.surface,
-            border: `1px solid ${ready ? BRAND.green : C.border}`,
+            textAlign: "center",
+            borderColor: ready ? "rgba(76,164,53,.55)" : W.line,
+            background: ready
+              ? `linear-gradient(160deg, rgba(76,164,53,.24), rgba(15,36,19,.9))`
+              : undefined,
           }}
         >
-          <div style={{ fontSize: 46 }}>{STATUS_META[order.status].emoji}</div>
-          <div style={{ ...FF, fontSize: 21, fontWeight: 900, color: ready ? "#FFF" : C.text, marginTop: 8 }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+            <BurgerGlyph size={52} color={ready ? W.greenLt : W.gold} stroke={5} />
+          </div>
+          <div style={{ ...display(30), color: W.text }}>
             {order.status === "READY"
               ? order.mode === "livraison" ? "En route !" : "C'est prêt !"
               : STATUS_META[order.status].label}
           </div>
-          <div style={{ ...FF, fontSize: 14, color: ready ? "rgba(255,255,255,.85)" : C.textSecondary, marginTop: 6 }}>
-            Commande <b translate="no">{order.ref}</b>
+          <div style={{ ...FONT, fontSize: 14, color: W.textSoft, marginTop: 10 }}>
+            Commande <b style={{ color: W.gold }} translate="no">{order.ref}</b>
             {order.table ? ` · table ${order.table}` : ""}
           </div>
           {!ready && (
-            <div style={{ ...FF, fontSize: 13.5, color: C.textSecondary, marginTop: 12 }} translate="no">
-              ⏱️ Prêt dans ~{left} min
+            <div style={{ ...display(19), color: W.gold, marginTop: 18, display: "inline-flex", alignItems: "center", gap: 9 }} translate="no">
+              <Icon name="clock" size={19} /> Prêt dans ~{left} min
             </div>
           )}
-        </Surface>
+        </Panel>
 
-        {/* Fil d'avancement */}
-        <Surface style={{ marginTop: 14 }}>
-          {["PENDING", "PREPARING", "READY", "DONE"].map((s, i) => (
-            <div key={s} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 0" }}>
+        {/* Progression */}
+        <Panel style={{ marginTop: 14 }}>
+          <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
+            {STEPS.map((s, i) => (
+              <div
+                key={s}
+                style={{
+                  flex: 1, height: 5, borderRadius: 99,
+                  background: i <= idx ? `linear-gradient(90deg, ${W.greenLt}, ${W.green})` : "rgba(255,255,255,.08)",
+                }}
+              />
+            ))}
+          </div>
+          {STEPS.map((s, i) => (
+            <div key={s} style={{ display: "flex", alignItems: "center", gap: 13, padding: "8px 0" }}>
               <span
                 style={{
-                  width: 26, height: 26, borderRadius: 999, flexShrink: 0,
-                  display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 12,
-                  background: i <= idx ? BRAND.green : C.surfaceAlt,
-                  color: i <= idx ? "#FFF" : C.textTertiary,
+                  width: 26, height: 26, borderRadius: 99, flexShrink: 0, fontSize: 11,
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  background: i <= idx ? W.green : "rgba(255,255,255,.06)",
+                  color: i <= idx ? "#08210C" : W.textDim, fontWeight: 900,
                 }}
               >
                 {i <= idx ? "✓" : i + 1}
               </span>
-              <span style={{ ...FF, fontSize: 14, fontWeight: i === idx ? 800 : 600, color: i <= idx ? C.text : C.textTertiary }}>
+              <span style={{ ...FONT, fontSize: 14, fontWeight: i === idx ? 800 : 600, color: i <= idx ? W.text : W.textDim }}>
                 {STATUS_META[s].label}
               </span>
             </div>
           ))}
-        </Surface>
+        </Panel>
 
         {/* Ticket */}
-        <Surface style={{ marginTop: 14 }}>
-          <div style={{ ...FF, fontSize: 13, fontWeight: 800, color: C.textTertiary, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 10 }}>
-            🧾 Votre ticket
-          </div>
+        <Panel style={{ marginTop: 14 }}>
+          <div style={{ ...label(10.5), color: W.gold, marginBottom: 14 }}>Votre ticket</div>
           {order.items.map((l) => (
-            <div key={l.key} style={{ padding: "7px 0", borderBottom: `1px solid ${C.border}` }}>
+            <div key={l.key} style={{ padding: "9px 0", borderBottom: `1px solid ${W.lineSoft}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                <span style={{ ...FF, fontSize: 13.5, fontWeight: 700, color: C.text }}>
+                <span style={{ ...FONT, fontSize: 14, fontWeight: 700, color: W.text }}>
                   <span translate="no">{l.qty}×</span> {l.name}
                 </span>
-                <span style={{ ...FF, fontSize: 13.5, fontWeight: 700, color: C.text }} translate="no">{fmtEuro(l.total)}</span>
+                <span style={{ ...FONT, fontSize: 14, fontWeight: 800, color: W.text }} translate="no">{fmtEuro(l.total)}</span>
               </div>
-              {l.opts?.length > 0 && (
-                <div style={{ ...FF, fontSize: 12, color: C.textSecondary, marginTop: 2 }}>{l.opts.join(" · ")}</div>
-              )}
-              {l.note && <div style={{ ...FF, fontSize: 12, color: BRAND.gold, marginTop: 2 }}>✏️ {l.note}</div>}
+              {l.opts?.length > 0 && <div style={{ ...FONT, fontSize: 12, color: W.textDim, marginTop: 3 }}>{l.opts.join(" · ")}</div>}
+              {l.note && <div style={{ ...FONT, fontSize: 12, color: W.orange, marginTop: 3 }}>✏️ {l.note}</div>}
             </div>
           ))}
-          <div style={{ marginTop: 10 }}>
-            {order.discount > 0 && <Row label={`Promo ${order.promo_code}`} value={`− ${fmtEuro(order.discount)}`} color={BRAND.green} />}
-            <Row label="Total" value={fmtEuro(order.total)} big />
-            <div style={{ ...FF, fontSize: 12, color: C.textSecondary, marginTop: 6 }}>
+          <div style={{ marginTop: 12 }}>
+            {order.discount > 0 && <Line k={`Promo ${order.promo_code}`} v={`− ${fmtEuro(order.discount)}`} tone={W.greenLt} />}
+            <Line k="Total" v={fmtEuro(order.total)} big />
+            <div style={{ ...FONT, fontSize: 12, color: W.textDim, marginTop: 8 }}>
               {order.payment_method === "carte" ? "💳 Payé par carte" : "💶 À régler en espèces"}
               {order.zone ? ` · ${order.zone}` : ""}
             </div>
           </div>
-        </Surface>
+        </Panel>
 
-        <Btn variant="subtle" full onClick={onNew} style={{ marginTop: 16 }}>
-          Passer une nouvelle commande
-        </Btn>
+        <Btn variant="outline" full onClick={onNew} style={{ marginTop: 18 }}>Passer une nouvelle commande</Btn>
       </div>
-    </div>
+    </Screen>
   );
 }
 
@@ -776,28 +756,15 @@ export default function RestoPortal({ table, scanId }) {
     setView("mode");
   };
 
-  if (view === "track" && orderId) {
-    return <TrackView orderId={orderId} onNew={startOver} />;
-  }
+  if (view === "track" && orderId) return <TrackView orderId={orderId} onNew={startOver} />;
 
   return (
-    <div style={{ minHeight: "100vh", background: C.bg }}>
-      {view === "mode" && (
-        <ModeChoice
-          table={table}
-          onPick={(m) => {
-            setMode(m);
-            setView("menu");
-          }}
-        />
-      )}
+    <>
+      {view === "mode" && <ModeChoice table={table} onPick={(m) => { setMode(m); setView("menu"); }} />}
 
       {view === "menu" && (
         <MenuView
-          menu={menu}
-          mode={mode}
-          table={table}
-          cart={cart}
+          menu={menu} mode={mode} table={table} cart={cart}
           openItem={setComposing}
           goCart={() => setView("cart")}
           back={() => setView("mode")}
@@ -806,10 +773,7 @@ export default function RestoPortal({ table, scanId }) {
 
       {view === "cart" && (
         <CartView
-          cart={cart}
-          setCart={setCart}
-          mode={mode}
-          table={table}
+          cart={cart} setCart={setCart} mode={mode} table={table}
           back={() => setView("menu")}
           goCheckout={() => setView("checkout")}
         />
@@ -817,10 +781,7 @@ export default function RestoPortal({ table, scanId }) {
 
       {view === "checkout" && (
         <CheckoutView
-          cart={cart}
-          mode={mode}
-          table={table}
-          toast={toast}
+          cart={cart} mode={mode} table={table} toast={toast}
           back={() => setView("cart")}
           onDone={(order) => {
             linkScanToOrder(scanId, order.id);
@@ -834,7 +795,7 @@ export default function RestoPortal({ table, scanId }) {
       )}
 
       {composing && (
-        <ItemComposer
+        <Composer
           item={composing}
           onClose={() => setComposing(null)}
           onAdd={(line) => {
@@ -844,6 +805,6 @@ export default function RestoPortal({ table, scanId }) {
           }}
         />
       )}
-    </div>
+    </>
   );
 }

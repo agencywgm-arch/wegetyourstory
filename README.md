@@ -21,15 +21,24 @@ Le client scanne le QR collé sur sa table, compose son burger et paie depuis so
 téléphone. La cuisine reçoit la commande dans la seconde avec alarme sonore, la
 caisse suit en direct.
 
+### Trois interfaces, trois destinations
+
+La barre de démonstration en haut de l'écran donne accès aux trois vues à tout
+moment — elles ne sont pas enfouies dans des onglets :
+
+- **Vue client** — le téléphone du client, atteint par le QR de la table
+- **Vue cuisine** — l'écran du passe, trois colonnes et une alarme
+- **Vue gestion** — l'ordinateur du gérant, huit modules
+
 ### Parcours de démo (2 minutes)
 
-1. Ouvrez `/` → **🚀 Voir la démo** → tableau de bord gestion
-2. Onglet **🔳 QR Tables** → « Ouvrir » sur une table (ou scannez le QR) → portail client
-3. **Sur place** → la carte → un burger → **formule frites + boisson**, sauces, suppléments
-4. **Panier** → **Commander** → nom, code promo `WELLDONE10`, carte ou espèces
-5. Le **suivi temps réel** démarre : compte à rebours, alerte sonore + vibration à « prête »
-6. Retour au dashboard → onglet **👨‍🍳 Cuisine** : la commande est là, l'alarme sonne
-   jusqu'à **Accepter** → le suivi côté client bascule tout seul
+1. Ouvrez `/` → **Lancer la démo client**
+2. **Sur place** → la carte → un burger → **formule frites + boisson**, sauces, suppléments
+3. **Panier** → **Commander** → nom, code promo `WELLDONE10`, carte ou espèces
+4. Le **suivi temps réel** démarre : compte à rebours, alerte sonore + vibration à « prête »
+5. Barre du haut → **Vue cuisine** : la commande est là, l'alarme sonne jusqu'à
+   **Accepter** → le suivi côté client bascule tout seul
+6. Barre du haut → **Vue gestion** : la vente est déjà dans la caisse et le CRM
 
 > La synchronisation passe par le `localStorage` du navigateur : elle fonctionne
 > entre onglets d'un même appareil (limite volontaire du « zéro backend »).
@@ -70,22 +79,49 @@ journal d'activité. Parcours détaillé dans l'historique du dépôt (PR #1 à 
 
 ---
 
+## Direction artistique
+
+La verticale Well Done reprend la charte de l'enseigne : **vert forêt** en fond,
+**or bronze** pour la marque et les accents, **vert vif** pour les actions,
+**orange** pour l'alerte. Surfaces en verre dépoli, typographie large et serrée,
+motif géométrique de la marque en filigrane.
+
+| Rôle | Hex |
+|---|---|
+| Fond profond | `#0A1A0D` |
+| Vert forêt | `#0F2413` |
+| Surface | `#16351A` |
+| Or bronze | `#C69A63` |
+| Vert vif (actions) | `#4CA435` |
+| Orange (alerte) | `#F0803C` |
+| Texte | `#F5F2EA` |
+
+Le logo est reconstruit en SVG dans `src/resto/Logo.jsx` : « WELL » léger et
+espacé au-dessus de « DONE », dont le O est un burger au trait. Toute
+l'iconographie d'interface passe par `src/resto/icons.jsx` — une seule grille,
+une seule graisse. Les emojis restent réservés aux plats.
+
 ## Stack
 
-- **React 19 + Vite**, CSS-in-JS inline, palette iOS-like, police Figtree
+- **React 19 + Vite**, CSS-in-JS inline, police Figtree
 - Seule dépendance : [`qrcode`](https://www.npmjs.com/package/qrcode)
 - `localStorage` fait office de serveur
 
 ```
 src/
-├── shared/ui.jsx     # design system partagé : tokens, hooks, toasts, primitives
-├── Root.jsx          # aiguillage entre les deux verticales
+├── shared/ui.jsx     # primitives communes aux deux verticales
+├── Root.jsx          # aiguillage, titre et favicon par verticale
 ├── App.jsx           # verticale hôtel
 └── resto/
-    ├── data.js       # carte Well Done, zones, promos, cycle de vie des commandes
+    ├── theme.js      # palette et styles Well Done
+    ├── Logo.jsx      # wordmark et pastille en SVG
+    ├── icons.jsx     # jeu d'icônes au trait
+    ├── ui.jsx        # primitives sombres : Panel, Btn, Sheet, Stat…
+    ├── data.js       # carte, zones, promos, cycle de vie des commandes
     ├── Client.jsx    # portail client (QR de table)
-    ├── Manager.jsx   # tableau de bord gestion + cuisine
-    └── RestoApp.jsx  # vitrine + accès au dashboard
+    ├── Kitchen.jsx   # écran cuisine (KDS)
+    ├── Manager.jsx   # tableau de bord gestion
+    └── RestoApp.jsx  # vitrine + barre de navigation entre les trois vues
 ```
 
 ## Développement
