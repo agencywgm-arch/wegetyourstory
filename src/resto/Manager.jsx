@@ -1,190 +1,268 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import QRCode from "qrcode";
-import {
-  C, FF, fmtEuro, todayISO, timeAgo, nowTime, saveFile, useTick, useWindowWidth, useToast,
-  Surface, Btn, Tag, InputField, Modal, PageTitle, KPICard, SectionTitle, playBeep,
-} from "../shared/ui.jsx";
+import { W, FONT, display, label, glass, goldText } from "./theme.js";
+import { Screen, Panel, Btn, Chip, Field, Sheet, Stat, PageHead, SectionLabel, Empty, Segmented } from "./ui.jsx";
+import { Logo } from "./Logo.jsx";
 import {
   BRAND, TABLES, CATEGORIES, MODE_META, STATUS_META, DELIVERY_ZONES,
-  readMenu, writeMenu, readOrders, readCustomers, readActivity, readScans,
+  readMenu, writeMenu, readCustomers, readActivity, readScans,
   advanceOrder, shiftEta, useOrders, ensureSeed,
 } from "./data.js";
-import { WDLogo } from "./Client.jsx";
+import { fmtEuro, todayISO, timeAgo, saveFile, useTick, useWindowWidth, useToast } from "../shared/ui.jsx";
+import { Icon, MODE_ICON } from "./icons.jsx";
 
-const tablePortalPath = (t) => {
+export const tablePortalPath = (t) => {
   const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
-  if (import.meta.env.VITE_HASH_ROUTING === "1")
-    return `${base}/#/r/${BRAND.slug}/t/${t}`;
+  if (import.meta.env.VITE_HASH_ROUTING === "1") return `${base}/#/r/${BRAND.slug}/t/${t}`;
   return `${base}/r/${BRAND.slug}/t/${t}`;
 };
 export const tablePortalUrl = (t) => `${window.location.origin}${tablePortalPath(t)}`;
 
 /* ==========================================================================
-   TABLEAU DE BORD GESTION — WELL DONE
+   TABLEAU DE BORD — regroupé par métier pour qu'aucune fonction ne se cherche.
    ========================================================================== */
 
-const TABS = [
-  { id: "overview", label: "Vue d'ensemble", emoji: "📊" },
-  { id: "orders", label: "Commandes", emoji: "🔴" },
-  { id: "kitchen", label: "Cuisine", emoji: "👨‍🍳" },
-  { id: "billing", label: "Caisse", emoji: "💶" },
-  { id: "menu", label: "Carte", emoji: "🍔" },
-  { id: "qr", label: "QR Tables", emoji: "🔳" },
-  { id: "crm", label: "CRM", emoji: "👥" },
-  { id: "delivery", label: "Livraison", emoji: "🛵" },
-  { id: "activity", label: "Activité", emoji: "🕑" },
+const NAV = [
+  {
+    group: "Service",
+    items: [
+      { id: "overview", label: "Vue d'ensemble", icon: "chart" },
+      { id: "orders", label: "Commandes", icon: "orders", live: true },
+    ],
+  },
+  {
+    group: "Vente",
+    items: [
+      { id: "billing", label: "Caisse", icon: "cash" },
+      { id: "menu", label: "La carte", icon: "menu" },
+    ],
+  },
+  {
+    group: "Clients",
+    items: [
+      { id: "crm", label: "Fichier clients", icon: "users" },
+      { id: "delivery", label: "Livraison", icon: "delivery" },
+    ],
+  },
+  {
+    group: "Installation",
+    items: [
+      { id: "qr", label: "QR des tables", icon: "qr" },
+      { id: "activity", label: "Journal", icon: "journal" },
+    ],
+  },
 ];
 
-export default function Manager({ onExit }) {
+export default function Manager({ onExit, onKitchen, onClient }) {
   const toast = useToast();
   const [tab, setTab] = useState("overview");
   const [orders, sync] = useOrders(3000);
   const [menu, setMenu] = useState(readMenu);
-  const w = useWindowWidth();
-  const narrow = w < 860;
+  const narrow = useWindowWidth() < 900;
 
   useEffect(() => { ensureSeed(); sync(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const today = orders.filter((o) => o.day === todayISO());
+  const pending = today.filter((o) => o.status === "PENDING").length;
   const act = (id, to) => { advanceOrder(id, to); sync(); };
 
-  return (
-    <div style={{ minHeight: "100vh", background: C.bg, display: narrow ? "block" : "flex" }}>
-      {/* Navigation */}
-      <aside
-        style={{
-          width: narrow ? "auto" : 232, flexShrink: 0, background: C.surface,
-          borderRight: narrow ? "none" : `1px solid ${C.border}`,
-          borderBottom: narrow ? `1px solid ${C.border}` : "none",
-          padding: narrow ? "12px 14px" : "20px 14px",
-          position: narrow ? "sticky" : "sticky", top: 0, zIndex: 60,
-          maxHeight: narrow ? "none" : "100vh", overflowY: "auto",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: narrow ? 10 : 22, paddingLeft: 6 }}>
-          <WDLogo size={narrow ? 17 : 22} />
-          <Btn variant="ghost" size="sm" onClick={onExit}>Quitter</Btn>
+  const nav = (
+    <>
+      {NAV.map((g) => (
+        <div key={g.group} style={{ marginBottom: narrow ? 0 : 18 }}>
+          {!narrow && <div style={{ ...label(9.5), color: W.textDim, padding: "0 12px 8px" }}>{g.group}</div>}
+          <div style={{ display: "flex", flexDirection: narrow ? "row" : "column", gap: 3 }}>
+            {g.items.map((t) => {
+              const on = tab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  style={{
+                    ...FONT, display: "flex", alignItems: "center", gap: 10, whiteSpace: "nowrap",
+                    padding: narrow ? "9px 14px" : "10px 12px", borderRadius: 12, cursor: "pointer",
+                    border: `1px solid ${on ? "rgba(198,154,99,.34)" : "transparent"}`,
+                    background: on ? "rgba(198,154,99,.13)" : "transparent",
+                    color: on ? W.gold : W.textSoft, fontSize: 13.5, fontWeight: on ? 800 : 600,
+                    textAlign: "left", width: narrow ? "auto" : "100%",
+                  }}
+                >
+                  <Icon name={t.icon} size={16} stroke={on ? 2 : 1.7} />
+                  <span>{t.label}</span>
+                  {t.live && pending > 0 && (
+                    <span
+                      style={{
+                        ...FONT, marginLeft: "auto", background: W.danger, color: "#fff", borderRadius: 999,
+                        fontSize: 10.5, fontWeight: 900, padding: "1px 7px",
+                      }}
+                      translate="no"
+                    >
+                      {pending}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <nav style={{ display: "flex", flexDirection: narrow ? "row" : "column", gap: 4, overflowX: narrow ? "auto" : "visible" }}>
-          {TABS.map((t) => {
-            const on = tab === t.id;
-            const badge = t.id === "orders" || t.id === "kitchen"
-              ? today.filter((o) => o.status === "PENDING").length
-              : 0;
-            return (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                style={{
-                  ...FF, display: "flex", alignItems: "center", gap: 9, whiteSpace: "nowrap",
-                  padding: narrow ? "8px 12px" : "10px 12px", borderRadius: 12, border: "none",
-                  background: on ? BRAND.green + "16" : "transparent",
-                  color: on ? BRAND.green : C.textSecondary,
-                  fontSize: 13.5, fontWeight: on ? 800 : 600, cursor: "pointer", textAlign: "left",
-                }}
-              >
-                <span>{t.emoji}</span>
-                {(!narrow || on) && <span>{t.label}</span>}
-                {badge > 0 && (
-                  <span style={{ ...FF, marginLeft: "auto", background: C.accent, color: "#FFF", borderRadius: 999, fontSize: 11, fontWeight: 800, padding: "1px 7px" }} translate="no">
-                    {badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-      </aside>
+      ))}
+    </>
+  );
 
-      <main style={{ flex: 1, padding: narrow ? "18px 16px 40px" : "26px 30px 50px", minWidth: 0 }}>
-        <div className="wgm-view" key={tab}>
-          {tab === "overview" && <OverviewTab orders={today} allOrders={orders} />}
-          {tab === "orders" && <OrdersTab orders={today} act={act} sync={sync} />}
-          {tab === "kitchen" && <KitchenTab orders={today} act={act} sync={sync} />}
-          {tab === "billing" && <BillingTab orders={today} toast={toast} />}
-          {tab === "menu" && <MenuTab menu={menu} setMenu={(m) => { setMenu(m); writeMenu(m); }} toast={toast} />}
-          {tab === "qr" && <QRTab toast={toast} />}
-          {tab === "crm" && <CRMTab />}
-          {tab === "delivery" && <DeliveryTab orders={orders} />}
-          {tab === "activity" && <ActivityTab />}
-        </div>
-      </main>
-    </div>
+  return (
+    <Screen>
+      <div style={{ display: narrow ? "block" : "flex", minHeight: "100dvh" }}>
+        {/* Rail de navigation */}
+        <aside
+          style={{
+            width: narrow ? "auto" : 244, flexShrink: 0,
+            borderRight: narrow ? "none" : `1px solid ${W.line}`,
+            borderBottom: narrow ? `1px solid ${W.line}` : "none",
+            background: "rgba(10,26,13,.6)", backdropFilter: "blur(20px)",
+            padding: narrow ? "12px 14px" : "22px 16px",
+            position: "sticky", top: "var(--wd-top, 0px)", zIndex: 60,
+            maxHeight: narrow ? "none" : "calc(100dvh - var(--wd-top, 0px))", overflowY: "auto",
+          }}
+          className="wd-scroll"
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: narrow ? 12 : 24, paddingLeft: 4 }}>
+            <Logo size={narrow ? 15 : 19} inline={narrow} />
+            {narrow && <Btn size="xs" variant="ghost" onClick={onExit}>Accueil</Btn>}
+          </div>
+
+          {!narrow && (
+            <div style={{ ...label(9.5), color: W.gold, padding: "0 12px 10px" }}>Tableau de bord</div>
+          )}
+
+          <div style={{ display: narrow ? "flex" : "block", gap: 8, overflowX: narrow ? "auto" : "visible" }} className="wd-scroll">
+            {nav}
+          </div>
+
+          {!narrow && (
+            <div style={{ marginTop: 22, paddingTop: 18, borderTop: `1px solid ${W.lineSoft}`, display: "grid", gap: 8 }}>
+              <div style={{ ...label(9.5), color: W.textDim, padding: "0 12px 4px" }}>Autres écrans</div>
+              <Btn size="sm" variant={pending > 0 ? "gold" : "outline"} onClick={onKitchen} full>
+                <Icon name="kitchen" size={16} /> Écran cuisine{pending > 0 ? ` · ${pending}` : ""}
+              </Btn>
+              <Btn size="sm" variant="outline" onClick={onClient} full><Icon name="phone" size={16} /> Vue client</Btn>
+              <Btn size="sm" variant="ghost" onClick={onExit} full>← Accueil</Btn>
+            </div>
+          )}
+        </aside>
+
+        <main style={{ flex: 1, minWidth: 0, padding: narrow ? "20px 16px 44px" : "30px 34px 56px" }}>
+          {narrow && (
+            <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
+              <Btn size="sm" variant={pending > 0 ? "gold" : "outline"} onClick={onKitchen} style={{ flex: 1 }}>
+                <Icon name="kitchen" size={15} /> Cuisine{pending > 0 ? ` · ${pending}` : ""}
+              </Btn>
+              <Btn size="sm" variant="outline" onClick={onClient} style={{ flex: 1 }}><Icon name="phone" size={15} /> Client</Btn>
+            </div>
+          )}
+
+          <div className="wd-view" key={tab}>
+            {tab === "overview" && <Overview orders={today} all={orders} onKitchen={onKitchen} pending={pending} />}
+            {tab === "orders" && <Orders orders={today} act={act} sync={sync} />}
+            {tab === "billing" && <Billing orders={today} toast={toast} />}
+            {tab === "menu" && <MenuAdmin menu={menu} setMenu={(m) => { setMenu(m); writeMenu(m); }} toast={toast} />}
+            {tab === "crm" && <CRM />}
+            {tab === "delivery" && <Delivery orders={orders} />}
+            {tab === "qr" && <QRTables toast={toast} />}
+            {tab === "activity" && <Activity />}
+          </div>
+        </main>
+      </div>
+    </Screen>
   );
 }
 
 /* ----------------------- Vue d'ensemble ----------------------- */
 
-function OverviewTab({ orders, allOrders }) {
+function Overview({ orders, all, onKitchen, pending }) {
   useTick(5000);
-  const paid = orders.filter((o) => o.status !== "PENDING" || o.paid);
   const revenue = orders.reduce((s, o) => s + o.total, 0);
-  const count = orders.length;
   const scans = readScans().filter((s) => s.day === todayISO());
   const converted = scans.filter((s) => s.order_id).length;
   const rate = scans.length ? Math.round((converted / scans.length) * 100) : 0;
-  const pending = orders.filter((o) => o.status === "PENDING");
 
-  const byMode = ["sur_place", "emporter", "livraison"].map((m) => ({
-    m,
-    n: orders.filter((o) => o.mode === m).length,
-    ca: orders.filter((o) => o.mode === m).reduce((s, o) => s + o.total, 0),
-  }));
+  const byMode = ["sur_place", "emporter", "livraison"].map((m) => {
+    const l = orders.filter((o) => o.mode === m);
+    return { m, n: l.length, ca: l.reduce((s, o) => s + o.total, 0) };
+  });
+  const maxCa = Math.max(1, ...byMode.map((b) => b.ca));
 
   const top = useMemo(() => {
     const m = {};
-    allOrders.forEach((o) =>
-      o.items.forEach((l) => {
-        m[l.name] = (m[l.name] || 0) + l.qty;
-      })
-    );
+    all.forEach((o) => o.items.forEach((l) => { m[l.name] = (m[l.name] || 0) + l.qty; }));
     return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  }, [allOrders]);
+  }, [all]);
+  const maxTop = Math.max(1, ...top.map((t) => t[1]));
 
   return (
     <div>
-      <PageTitle>📊 Vue d'ensemble — {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</PageTitle>
+      <PageHead
+        title="Vue d'ensemble"
+        sub={new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
+        right={<Chip tone="green">● Temps réel</Chip>}
+      />
 
-      {pending.length > 0 && (
-        <Surface style={{ marginBottom: 16, background: C.accent + "12", border: `1px solid ${C.accent}44` }}>
-          <div style={{ ...FF, fontSize: 14, fontWeight: 800, color: C.accent }}>
-            🔔 {pending.length} commande{pending.length > 1 ? "s" : ""} en attente d'acceptation en cuisine
-          </div>
-        </Surface>
+      {pending > 0 && (
+        <Panel
+          pad={16}
+          style={{ marginBottom: 18, borderColor: "rgba(240,128,60,.45)", background: "rgba(240,128,60,.09)", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}
+        >
+          <span style={{ ...display(17), color: W.orange, display: "inline-flex", alignItems: "center", gap: 9 }}><Icon name="bell" size={19} /> {pending} commande{pending > 1 ? "s" : ""} en attente</span>
+          <span style={{ ...FONT, fontSize: 13, color: W.textSoft, flex: 1, minWidth: 180 }}>
+            L'alarme sonne en cuisine jusqu'à acceptation.
+          </span>
+          <Btn size="sm" variant="gold" onClick={onKitchen}>Ouvrir l'écran cuisine</Btn>
+        </Panel>
       )}
 
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 18 }}>
-        <KPICard label="CA du jour" value={fmtEuro(revenue)} color={BRAND.green} sub={`${count} commande(s)`} />
-        <KPICard label="Panier moyen" value={count ? fmtEuro(revenue / count) : "—"} />
-        <KPICard label="Scans QR" value={scans.length} sub={`${converted} converti(s)`} />
-        <KPICard label="Taux de conversion" value={`${rate} %`} color={rate >= 50 ? BRAND.green : C.accentOrange} sub="Scan → commande" />
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <Stat label="CA du jour" value={fmtEuro(revenue)} tone="gold" sub={`${orders.length} commande(s)`} icon={<Icon name="cash" size={14} />} />
+        <Stat label="Panier moyen" value={orders.length ? fmtEuro(revenue / orders.length) : "—"} icon={<Icon name="spark" size={14} />} />
+        <Stat label="Scans QR" value={scans.length} sub={`${converted} converti(s)`} icon={<Icon name="qr" size={14} />} />
+        <Stat label="Conversion" value={`${rate} %`} tone={rate >= 50 ? "green" : "orange"} sub="Scan → commande" icon={<Icon name="target" size={14} />} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 14 }}>
-        <Surface>
-          <SectionTitle style={{ margin: "0 0 12px" }}>Répartition par mode</SectionTitle>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 14, marginTop: 16 }}>
+        <Panel>
+          <div style={{ ...label(10.5), color: W.gold, marginBottom: 16 }}>Répartition par mode</div>
           {byMode.map((b) => (
-            <div key={b.m} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${C.border}` }}>
-              <span style={{ ...FF, fontSize: 13.5, fontWeight: 700, color: C.text }}>
-                {MODE_META[b.m].emoji} {MODE_META[b.m].label}
-              </span>
-              <span style={{ ...FF, fontSize: 13, color: C.textSecondary }} translate="no">
-                {b.n} · <b style={{ color: C.text }}>{fmtEuro(b.ca)}</b>
-              </span>
+            <div key={b.m} style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
+                <span style={{ ...FONT, fontSize: 13.5, fontWeight: 700, color: W.text, display: "inline-flex", alignItems: "center", gap: 8 }}>
+                  <Icon name={MODE_ICON[b.m]} size={15} color={W.gold} /> {MODE_META[b.m].label}
+                </span>
+                <span style={{ ...FONT, fontSize: 13, color: W.textSoft }} translate="no">
+                  {b.n} · <b style={{ color: W.gold }}>{fmtEuro(b.ca)}</b>
+                </span>
+              </div>
+              <div style={{ height: 6, borderRadius: 99, background: "rgba(255,255,255,.06)", overflow: "hidden" }}>
+                <div style={{ width: `${(b.ca / maxCa) * 100}%`, height: "100%", borderRadius: 99, background: `linear-gradient(90deg, ${W.greenLt}, ${W.green})` }} />
+              </div>
             </div>
           ))}
-        </Surface>
+        </Panel>
 
-        <Surface>
-          <SectionTitle style={{ margin: "0 0 12px" }}>Meilleures ventes</SectionTitle>
-          {top.length === 0 && <div style={{ ...FF, fontSize: 13, color: C.textTertiary }}>Aucune vente pour l'instant.</div>}
+        <Panel>
+          <div style={{ ...label(10.5), color: W.gold, marginBottom: 16 }}>Meilleures ventes</div>
+          {top.length === 0 && <div style={{ ...FONT, fontSize: 13, color: W.textDim }}>Aucune vente pour l'instant.</div>}
           {top.map(([name, n], i) => (
-            <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: i < top.length - 1 ? `1px solid ${C.border}` : "none" }}>
-              <span style={{ ...FF, fontSize: 13.5, fontWeight: 700, color: C.text }}>{i + 1}. {name}</span>
-              <Tag color={BRAND.gold}><span translate="no">{n} vendu{n > 1 ? "s" : ""}</span></Tag>
+            <div key={name} style={{ marginBottom: 13 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
+                <span style={{ ...FONT, fontSize: 13.5, fontWeight: 700, color: W.text }}>
+                  <span style={{ color: W.textDim }} translate="no">{i + 1}.</span> {name}
+                </span>
+                <span style={{ ...FONT, fontSize: 13, fontWeight: 800, color: W.gold }} translate="no">{n}</span>
+              </div>
+              <div style={{ height: 6, borderRadius: 99, background: "rgba(255,255,255,.06)", overflow: "hidden" }}>
+                <div style={{ width: `${(n / maxTop) * 100}%`, height: "100%", borderRadius: 99, background: `linear-gradient(90deg, ${W.goldLt}, ${W.gold})` }} />
+              </div>
             </div>
           ))}
-        </Surface>
+        </Panel>
       </div>
     </div>
   );
@@ -193,175 +271,111 @@ function OverviewTab({ orders, allOrders }) {
 /* ----------------------- Commandes ----------------------- */
 
 const NEXT = { PENDING: "PREPARING", PREPARING: "READY", READY: "DONE" };
-const NEXT_LABEL = { PENDING: "Accepter", PREPARING: "Prête", READY: "Terminer" };
+const NEXT_LABEL = { PENDING: "Accepter", PREPARING: "Marquer prête", READY: "Terminer" };
 
-function OrderCard({ o, act, sync, compact }) {
+function OrderRow({ o, act, sync }) {
   useTick(1000);
   const left = Math.max(0, Math.round((o.eta_at - Date.now()) / 60000));
   const meta = STATUS_META[o.status];
+
   return (
-    <Surface style={{ padding: 15, borderLeft: `4px solid ${meta.color}` }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <b style={{ ...FF, fontSize: 15.5, fontWeight: 900, color: C.text }} translate="no">{o.ref}</b>
-          <Tag color={meta.color}>{meta.emoji} {meta.label}</Tag>
-          <Tag color={C.textSecondary}>
-            {MODE_META[o.mode].emoji} {MODE_META[o.mode].label}{o.table ? ` · T${o.table}` : ""}
-          </Tag>
-        </span>
-        <span style={{ ...FF, fontSize: 12.5, color: C.textSecondary }} translate="no">{o.at}</span>
+    <Panel pad={0} style={{ overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 16px", borderBottom: `1px solid ${W.lineSoft}`, flexWrap: "wrap" }}>
+        <span style={{ ...display(18), color: W.text }} translate="no">{o.ref}</span>
+        <Chip tone={o.status === "PENDING" ? "orange" : o.status === "READY" ? "green" : o.status === "DONE" ? "dim" : "info"}>
+          {meta.emoji} {meta.label}
+        </Chip>
+        <Chip tone="dim">
+          <Icon name={MODE_ICON[o.mode]} size={13} /> {o.table ? `Table ${o.table}` : MODE_META[o.mode].label}
+        </Chip>
+        <span style={{ marginLeft: "auto", ...FONT, fontSize: 12.5, color: W.textDim }} translate="no">{o.at}</span>
       </div>
 
-      <div style={{ marginTop: 10 }}>
+      <div style={{ padding: "12px 16px" }}>
         {o.items.map((l) => (
-          <div key={l.key} style={{ padding: "5px 0" }}>
-            <div style={{ ...FF, fontSize: 14, fontWeight: 700, color: C.text }}>
-              <span translate="no">{l.qty}×</span> {l.emoji} {l.name}
-            </div>
+          <div key={l.key} style={{ padding: "4px 0" }}>
+            <span style={{ ...FONT, fontSize: 14, fontWeight: 700, color: W.text }}>
+              <span style={{ color: W.gold }} translate="no">{l.qty}×</span> {l.name}
+            </span>
             {l.opts?.length > 0 && (
-              <div style={{ ...FF, fontSize: 12.5, color: C.textSecondary, marginLeft: 20 }}>{l.opts.join(" · ")}</div>
+              <span style={{ ...FONT, display: "block", fontSize: 12.5, color: W.textDim, marginLeft: 22 }}>{l.opts.join(" · ")}</span>
             )}
             {l.note && (
-              <div style={{ ...FF, fontSize: 12.5, fontWeight: 800, color: C.accent, marginLeft: 20 }}>✏️ {l.note}</div>
+              <span style={{ ...FONT, display: "block", fontSize: 12.5, color: W.orange, marginLeft: 22, fontWeight: 700 }}>✏️ {l.note}</span>
             )}
           </div>
         ))}
+
+        {(o.customer?.name || o.customer?.address) && (
+          <div style={{ ...FONT, fontSize: 12.5, color: W.textDim, marginTop: 10, lineHeight: 1.5 }}>
+            {o.customer.name}
+            {o.customer.phone ? ` · ${o.customer.phone}` : ""}
+            {o.customer.address ? ` · ${o.customer.address}, ${o.customer.city}` : ""}
+          </div>
+        )}
       </div>
 
-      {(o.customer?.name || o.customer?.address) && (
-        <div style={{ ...FF, fontSize: 12.5, color: C.textSecondary, marginTop: 8, lineHeight: 1.5 }}>
-          👤 {o.customer.name}
-          {o.customer.phone ? ` · ${o.customer.phone}` : ""}
-          {o.customer.address ? <><br />📍 {o.customer.address}, {o.customer.city}</> : ""}
-        </div>
-      )}
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
-        <span style={{ ...FF, fontSize: 16, fontWeight: 900, color: C.text }} translate="no">
-          {fmtEuro(o.total)}
-          <span style={{ fontSize: 12, fontWeight: 700, color: C.textSecondary }}>
-            {" "}· {o.payment_method === "carte" ? "💳 payé" : "💶 espèces"}
-          </span>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderTop: `1px solid ${W.lineSoft}`, background: "rgba(0,0,0,.16)", flexWrap: "wrap" }}>
+        <span style={{ ...display(18), ...goldText }} translate="no">{fmtEuro(o.total)}</span>
+        <span style={{ ...FONT, fontSize: 12, color: W.textDim }}>
+          {o.payment_method === "carte" ? "💳 payé" : "💶 espèces"}
         </span>
-        <span style={{ display: "flex", gap: 7, alignItems: "center", flexWrap: "wrap" }}>
-          {o.status !== "DONE" && !compact && (
+        <span style={{ marginLeft: "auto", display: "flex", gap: 7, alignItems: "center", flexWrap: "wrap" }}>
+          {o.status !== "DONE" && (
             <>
-              <Btn variant="subtle" size="sm" onClick={() => { shiftEta(o.id, -5); sync(); }}>−5 min</Btn>
-              <Tag color={C.accentOrange}><span translate="no">⏱️ {left} min</span></Tag>
-              <Btn variant="subtle" size="sm" onClick={() => { shiftEta(o.id, 5); sync(); }}>+5 min</Btn>
+              <Btn size="xs" variant="ghost" onClick={() => { shiftEta(o.id, -5); sync(); }}>−5</Btn>
+              <Chip tone={left <= 3 ? "danger" : "dim"}><span translate="no">⏱️ {left}′</span></Chip>
+              <Btn size="xs" variant="ghost" onClick={() => { shiftEta(o.id, 5); sync(); }}>+5</Btn>
             </>
           )}
           {NEXT[o.status] && (
-            <Btn
-              size="sm"
-              onClick={() => act(o.id, NEXT[o.status])}
-              style={{ background: o.status === "PENDING" ? C.accent : BRAND.green, color: "#FFF" }}
-            >
+            <Btn size="sm" variant={o.status === "PENDING" ? "gold" : "primary"} onClick={() => act(o.id, NEXT[o.status])}>
               {NEXT_LABEL[o.status]}
             </Btn>
           )}
         </span>
       </div>
-    </Surface>
+    </Panel>
   );
 }
 
-function OrdersTab({ orders, act, sync }) {
+function Orders({ orders, act, sync }) {
+  const [filter, setFilter] = useState("live");
   const live = orders.filter((o) => o.status !== "DONE");
   const done = orders.filter((o) => o.status === "DONE");
-  return (
-    <div>
-      <PageTitle right={<Tag color={BRAND.green}>🔄 Temps réel</Tag>}>🔴 Commandes du jour</PageTitle>
-      {live.length === 0 && (
-        <Surface style={{ textAlign: "center", padding: 30 }}>
-          <div style={{ ...FF, color: C.textSecondary }}>Aucune commande en cours.</div>
-        </Surface>
-      )}
-      <div style={{ display: "grid", gap: 12 }}>
-        {live.map((o) => <OrderCard key={o.id} o={o} act={act} sync={sync} />)}
-      </div>
-      {done.length > 0 && (
-        <>
-          <SectionTitle>Terminées ({done.length})</SectionTitle>
-          <div style={{ display: "grid", gap: 10 }}>
-            {done.map((o) => <OrderCard key={o.id} o={o} act={act} sync={sync} compact />)}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-/* ----------------------- Cuisine (kanban + alarme) ----------------------- */
-
-function KitchenTab({ orders, act, sync }) {
-  const pending = orders.filter((o) => o.status === "PENDING");
-  const alarmRef = useRef(null);
-
-  /* Alarme volontairement insistante : elle ne s'arrête qu'une fois la
-     commande acceptée, sinon un coup de feu la fait passer inaperçue. */
-  useEffect(() => {
-    if (pending.length > 0 && !alarmRef.current) {
-      const ring = () => { playBeep(980, 260, 0.22); setTimeout(() => playBeep(760, 320, 0.22), 280); };
-      ring();
-      alarmRef.current = setInterval(ring, 3000);
-    }
-    if (pending.length === 0 && alarmRef.current) {
-      clearInterval(alarmRef.current);
-      alarmRef.current = null;
-    }
-    return () => {
-      if (alarmRef.current && pending.length === 0) {
-        clearInterval(alarmRef.current);
-        alarmRef.current = null;
-      }
-    };
-  }, [pending.length]);
-
-  useEffect(() => () => { if (alarmRef.current) clearInterval(alarmRef.current); }, []);
-
-  const cols = [
-    { id: "PENDING", label: "Reçues" },
-    { id: "PREPARING", label: "En préparation" },
-    { id: "READY", label: "Prêtes" },
-  ];
+  const list = filter === "live" ? live : filter === "done" ? done : orders;
 
   return (
     <div>
-      <PageTitle right={pending.length > 0 ? <Tag color={C.accent}>🔔 Alarme active</Tag> : <Tag color={BRAND.green}>✓ À jour</Tag>}>
-        👨‍🍳 Cuisine
-      </PageTitle>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 14, alignItems: "start" }}>
-        {cols.map((c) => {
-          const list = orders.filter((o) => o.status === c.id);
-          return (
-            <div key={c.id}>
-              <div style={{ ...FF, fontSize: 13, fontWeight: 800, color: C.textSecondary, marginBottom: 10, display: "flex", justifyContent: "space-between" }}>
-                <span>{STATUS_META[c.id].emoji} {c.label}</span>
-                <span translate="no">{list.length}</span>
-              </div>
-              <div style={{ display: "grid", gap: 10 }}>
-                {list.map((o) => <OrderCard key={o.id} o={o} act={act} sync={sync} />)}
-                {list.length === 0 && (
-                  <div style={{ ...FF, fontSize: 12.5, color: C.textTertiary, padding: 16, textAlign: "center", border: `1px dashed ${C.borderStrong}`, borderRadius: 14 }}>
-                    Vide
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div style={{ ...FF, fontSize: 12, color: C.textTertiary, marginTop: 18 }}>
-        Astuce tablette : régler la mise en veille sur « jamais ». Un écran endormi coupe la synchronisation.
-      </div>
+      <PageHead
+        title="Commandes du jour"
+        sub={`${live.length} en cours · ${done.length} terminée(s)`}
+        right={
+          <Segmented
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { id: "live", label: `En cours ${live.length}` },
+              { id: "done", label: `Terminées ${done.length}` },
+              { id: "all", label: "Toutes" },
+            ]}
+          />
+        }
+      />
+      {list.length === 0 ? (
+        <Panel><Empty icon={<Icon name="orders" size={32} />} title="Aucune commande" sub="Les commandes arrivent ici en temps réel." /></Panel>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))", gap: 14, alignItems: "start" }}>
+          {list.map((o) => <OrderRow key={o.id} o={o} act={act} sync={sync} />)}
+        </div>
+      )}
     </div>
   );
 }
 
 /* ----------------------- Caisse ----------------------- */
 
-function BillingTab({ orders, toast }) {
+function Billing({ orders, toast }) {
   const rows = orders.filter((o) => o.status !== "PENDING");
   const total = rows.reduce((s, o) => s + o.total, 0);
   const carte = rows.filter((o) => o.payment_method === "carte").reduce((s, o) => s + o.total, 0);
@@ -370,10 +384,7 @@ function BillingTab({ orders, toast }) {
   const exportCSV = async () => {
     const csv = [
       ["Réf", "Heure", "Mode", "Table", "Paiement", "Remise EUR", "Total EUR"],
-      ...rows.map((o) => [
-        o.ref, o.at, MODE_META[o.mode].label, o.table || "", o.payment_method,
-        String(o.discount || 0).replace(".", ","), String(o.total).replace(".", ","),
-      ]),
+      ...rows.map((o) => [o.ref, o.at, MODE_META[o.mode].label, o.table || "", o.payment_method, String(o.discount || 0).replace(".", ","), String(o.total).replace(".", ",")]),
       ["", "", "", "", "TOTAL", "", String(Math.round(total * 100) / 100).replace(".", ",")],
     ].map((r) => r.join(";")).join("\n");
     const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
@@ -385,10 +396,10 @@ function BillingTab({ orders, toast }) {
     if (!w) return toast.error("Autorisez les fenêtres pop-up pour imprimer");
     w.document.write(`<!doctype html><html lang="fr" translate="no"><head><meta charset="utf-8">
       <title>Rapport Z — ${todayISO()}</title>
-      <style>body{font-family:system-ui,sans-serif;padding:32px;max-width:520px}h1{font-size:20px}
-      table{width:100%;border-collapse:collapse;font-size:14px;margin-top:16px}
-      td{padding:6px 0;border-bottom:1px solid #eee}td:last-child{text-align:right;font-weight:700}</style></head><body>
-      <h1>WELL DONE — Rapport Z</h1><div>${new Date().toLocaleString("fr-FR")}</div>
+      <style>body{font-family:system-ui,sans-serif;padding:36px;max-width:520px;color:#0F2413}
+      h1{font-size:19px;letter-spacing:.06em}table{width:100%;border-collapse:collapse;font-size:14px;margin-top:18px}
+      td{padding:8px 0;border-bottom:1px solid #eee}td:last-child{text-align:right;font-weight:700}</style></head><body>
+      <h1>WELL DONE — RAPPORT Z</h1><div style="color:#777;font-size:13px">${new Date().toLocaleString("fr-FR")}</div>
       <table>
         <tr><td>Commandes</td><td>${rows.length}</td></tr>
         <tr><td>Carte</td><td>${fmtEuro(carte)}</td></tr>
@@ -401,189 +412,196 @@ function BillingTab({ orders, toast }) {
 
   return (
     <div>
-      <PageTitle
+      <PageHead
+        title="Caisse"
+        sub="Encaissements de la journée"
         right={
           <span style={{ display: "flex", gap: 8 }}>
-            <Btn variant="subtle" size="sm" onClick={exportCSV}>⬇️ CSV</Btn>
-            <Btn variant="subtle" size="sm" onClick={rapportZ}>🧾 Rapport Z</Btn>
+            <Btn size="sm" variant="outline" onClick={exportCSV}><Icon name="download" size={15} /> CSV</Btn>
+            <Btn size="sm" variant="outline" onClick={rapportZ}><Icon name="print" size={15} /> Rapport Z</Btn>
           </span>
         }
-      >
-        💶 Caisse
-      </PageTitle>
-
+      />
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 18 }}>
-        <KPICard label="Encaissé aujourd'hui" value={fmtEuro(total)} color={BRAND.green} />
-        <KPICard label="Carte" value={fmtEuro(carte)} />
-        <KPICard label="Espèces" value={fmtEuro(especes)} />
+        <Stat label="Encaissé" value={fmtEuro(total)} tone="gold" />
+        <Stat label="Carte" value={fmtEuro(carte)} />
+        <Stat label="Espèces" value={fmtEuro(especes)} />
       </div>
-
-      <Surface style={{ padding: "6px 18px" }}>
-        {rows.length === 0 && (
-          <div style={{ ...FF, padding: 14, color: C.textTertiary, fontSize: 14 }}>Aucun encaissement pour l'instant.</div>
+      <Panel pad={0}>
+        {rows.length === 0 ? (
+          <Empty icon={<Icon name="cash" size={32} />} title="Aucun encaissement" />
+        ) : (
+          rows.map((o, i) => (
+            <div key={o.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "14px 18px", borderBottom: i < rows.length - 1 ? `1px solid ${W.lineSoft}` : "none", flexWrap: "wrap" }}>
+              <span style={{ ...FONT, fontSize: 13.5, color: W.text }}>
+                <b translate="no">{o.ref}</b>
+                <span style={{ color: W.textDim }}> · {MODE_META[o.mode].label}{o.table ? ` · T${o.table}` : ""}</span>
+              </span>
+              <span style={{ ...FONT, fontSize: 13, color: W.textDim }} translate="no">
+                {o.at} · {o.payment_method} · <b style={{ color: W.gold }}>{fmtEuro(o.total)}</b>
+              </span>
+            </div>
+          ))
         )}
-        {rows.map((o, i) => (
-          <div key={o.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "12px 0", borderBottom: i < rows.length - 1 ? `1px solid ${C.border}` : "none", flexWrap: "wrap" }}>
-            <span style={{ ...FF, fontSize: 13.5, fontWeight: 600, color: C.text }}>
-              <b translate="no">{o.ref}</b> · {MODE_META[o.mode].label}{o.table ? ` · T${o.table}` : ""}
-            </span>
-            <span style={{ ...FF, fontSize: 13, color: C.textSecondary }} translate="no">
-              {o.at} · {o.payment_method} · <b style={{ color: C.text }}>{fmtEuro(o.total)}</b>
-            </span>
-          </div>
-        ))}
-      </Surface>
+      </Panel>
     </div>
   );
 }
 
-/* ----------------------- Carte (CRUD) ----------------------- */
+/* ----------------------- Carte ----------------------- */
 
-function MenuTab({ menu, setMenu, toast }) {
+function MenuAdmin({ menu, setMenu, toast }) {
   const [edit, setEdit] = useState(null);
-
-  const toggle = (id) => {
-    setMenu(menu.map((m) => (m.id === id ? { ...m, available: m.available === false } : m)));
-  };
+  const [cat, setCat] = useState(CATEGORIES[0].id);
+  const items = menu.filter((m) => m.category === cat);
 
   return (
     <div>
-      <PageTitle right={<Tag color={BRAND.gold}><span translate="no">{menu.length} articles</span></Tag>}>🍔 La carte</PageTitle>
-      {CATEGORIES.map((c) => {
-        const items = menu.filter((m) => m.category === c.id);
-        if (!items.length) return null;
-        return (
-          <div key={c.id}>
-            <SectionTitle>{c.emoji} {c.label}</SectionTitle>
-            <Surface style={{ padding: "6px 16px" }}>
-              {items.map((m, i) => (
-                <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderBottom: i < items.length - 1 ? `1px solid ${C.border}` : "none", flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 20 }}>{m.emoji}</span>
-                  <span style={{ flex: 1, minWidth: 160 }}>
-                    <span style={{ ...FF, display: "block", fontSize: 14.5, fontWeight: 800, color: m.available === false ? C.textTertiary : C.text }}>
-                      {m.name}
-                    </span>
-                    {m.desc && (
-                      <span style={{ ...FF, display: "block", fontSize: 12, color: C.textTertiary, marginTop: 2 }}>
-                        {m.desc.length > 70 ? m.desc.slice(0, 70) + "…" : m.desc}
-                      </span>
-                    )}
-                  </span>
-                  <b style={{ ...FF, fontSize: 14.5, fontWeight: 900, color: C.text }} translate="no">{fmtEuro(m.price)}</b>
-                  <Btn variant="subtle" size="sm" onClick={() => setEdit(m)}>Modifier</Btn>
-                  <Btn
-                    variant={m.available === false ? "subtle" : "ghost"}
-                    size="sm"
-                    onClick={() => toggle(m.id)}
-                    style={m.available === false ? { color: C.accent } : undefined}
-                  >
-                    {m.available === false ? "Épuisé" : "En vente"}
-                  </Btn>
+      <PageHead title="La carte" sub={`${menu.length} articles · ${CATEGORIES.length} catégories`} />
+      <div className="wd-scroll" style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 6, marginBottom: 16 }}>
+        {CATEGORIES.map((c) => {
+          const on = cat === c.id;
+          return (
+            <button
+              key={c.id}
+              onClick={() => setCat(c.id)}
+              style={{
+                ...FONT, flexShrink: 0, borderRadius: 999, padding: "9px 15px", fontSize: 13, fontWeight: 800, cursor: "pointer",
+                border: `1px solid ${on ? "transparent" : W.lineSoft}`,
+                background: on ? `linear-gradient(135deg, ${W.goldLt}, ${W.gold})` : "rgba(255,255,255,.03)",
+                color: on ? "#2A1B08" : W.textSoft,
+              }}
+            >
+              {c.emoji} {c.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 12 }}>
+        {items.map((m) => {
+          const off = m.available === false;
+          return (
+            <Panel key={m.id} pad={16} style={{ opacity: off ? 0.55 : 1 }}>
+              <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                <span style={{ fontSize: 22 }}>{m.emoji}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                    <b style={{ ...display(16), color: W.text }}>{m.name}</b>
+                    <b style={{ ...display(16), ...goldText }} translate="no">{fmtEuro(m.price)}</b>
+                  </div>
+                  {m.desc && (
+                    <div style={{ ...FONT, fontSize: 12, color: W.textDim, marginTop: 5, lineHeight: 1.45 }}>
+                      {m.desc.length > 78 ? m.desc.slice(0, 78) + "…" : m.desc}
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: 7, marginTop: 12 }}>
+                    <Btn size="xs" variant="outline" onClick={() => setEdit(m)}>Modifier</Btn>
+                    <Btn
+                      size="xs"
+                      variant={off ? "danger" : "ghost"}
+                      onClick={() => setMenu(menu.map((x) => (x.id === m.id ? { ...x, available: off } : x)))}
+                    >
+                      {off ? "Épuisé" : "En vente"}
+                    </Btn>
+                  </div>
                 </div>
-              ))}
-            </Surface>
-          </div>
-        );
-      })}
+              </div>
+            </Panel>
+          );
+        })}
+      </div>
 
       {edit && (
-        <Modal title={`Modifier — ${edit.name}`} onClose={() => setEdit(null)}>
-          <div style={{ display: "grid", gap: 12 }}>
-            <InputField label="Nom" value={edit.name} onChange={(v) => setEdit({ ...edit, name: v })} />
-            <InputField label="Description" value={edit.desc || ""} onChange={(v) => setEdit({ ...edit, desc: v })} />
-            <InputField label="Prix (€)" type="number" value={edit.price} onChange={(v) => setEdit({ ...edit, price: Number(v) || 0 })} />
+        <Sheet
+          title={`Modifier — ${edit.name}`}
+          onClose={() => setEdit(null)}
+          footer={
+            <Btn full size="lg" onClick={() => { setMenu(menu.map((m) => (m.id === edit.id ? edit : m))); setEdit(null); toast.success("Carte mise à jour ✓"); }}>
+              Enregistrer
+            </Btn>
+          }
+        >
+          <div style={{ display: "grid", gap: 14 }}>
+            <Field label="Nom" value={edit.name} onChange={(v) => setEdit({ ...edit, name: v })} />
+            <Field label="Description" area value={edit.desc || ""} onChange={(v) => setEdit({ ...edit, desc: v })} />
+            <Field label="Prix (€)" type="number" value={edit.price} onChange={(v) => setEdit({ ...edit, price: Number(v) || 0 })} />
           </div>
-          <Btn
-            full size="lg"
-            style={{ marginTop: 16, background: BRAND.green, color: "#FFF" }}
-            onClick={() => {
-              setMenu(menu.map((m) => (m.id === edit.id ? edit : m)));
-              setEdit(null);
-              toast.success("Carte mise à jour ✓");
-            }}
-          >
-            Enregistrer
-          </Btn>
-        </Modal>
+        </Sheet>
       )}
     </div>
   );
 }
 
-/* ----------------------- QR Tables ----------------------- */
+/* ----------------------- QR ----------------------- */
 
-function QRTab({ toast }) {
-  const [dark, setDark] = useState(BRAND.ink);
+function QRTables({ toast }) {
   const [busy, setBusy] = useState(false);
   const canvases = useRef({});
 
   useEffect(() => {
     TABLES.forEach((t) => {
       const el = canvases.current[t];
-      if (el) QRCode.toCanvas(el, tablePortalUrl(t), { width: 150, margin: 1, color: { dark, light: "#FFFFFF" } }).catch(() => {});
+      if (el) QRCode.toCanvas(el, tablePortalUrl(t), { width: 154, margin: 1, color: { dark: "#0F2413", light: "#F5F2EA" } }).catch(() => {});
     });
-  }, [dark]);
+  }, []);
 
-  const downloadOne = async (t) => {
-    const dataUrl = await QRCode.toDataURL(tablePortalUrl(t), { width: 900, margin: 2, color: { dark, light: "#FFFFFF" } });
-    const blob = await (await fetch(dataUrl)).blob();
+  const one = async (t) => {
+    const url = await QRCode.toDataURL(tablePortalUrl(t), { width: 900, margin: 2, color: { dark: "#0F2413", light: "#FFFFFF" } });
+    const blob = await (await fetch(url)).blob();
     if (await saveFile(blob, `qr-well-done-table-${t}.png`)) toast.success(`QR table ${t} téléchargé ✓`);
   };
 
-  /* Planche imprimable dessinée en Canvas 2D natif, page par page.
-     html2canvas dépasse la limite de surface de Safari sur iOS et rend une
-     image blanche sans lever d'erreur : on ne l'utilise pas. */
-  const downloadSheet = async () => {
+  /* Planche dessinée en Canvas 2D natif : html2canvas rend une image blanche
+     au-delà d'une certaine surface sur iOS, sans lever d'erreur. */
+  const sheet = async () => {
     setBusy(true);
     try {
-      const PER_PAGE = 12, COLS = 3;
-      const W = 2480, H = 3508; // A4 à 300 dpi
-      const pages = Math.ceil(TABLES.length / PER_PAGE);
+      const PER = 12, COLS = 3, PW = 2480, PH = 3508;
+      const pages = Math.ceil(TABLES.length / PER);
       for (let p = 0; p < pages; p++) {
-        const slice = TABLES.slice(p * PER_PAGE, (p + 1) * PER_PAGE);
+        const slice = TABLES.slice(p * PER, (p + 1) * PER);
         const cv = document.createElement("canvas");
-        cv.width = W; cv.height = H;
+        cv.width = PW; cv.height = PH;
         const x = cv.getContext("2d");
-        x.fillStyle = "#FFFFFF"; x.fillRect(0, 0, W, H);
 
-        x.fillStyle = BRAND.gold;
-        x.font = "900 96px Figtree, sans-serif";
+        x.fillStyle = "#0F2413"; x.fillRect(0, 0, PW, PH);
         x.textAlign = "center";
-        x.fillText("WELL", W / 2, 190);
-        x.fillStyle = BRAND.ink;
-        x.fillText("D🍔NE", W / 2, 292);
-        x.fillStyle = "#6E6E73";
-        x.font = "700 34px Figtree, sans-serif";
-        x.fillText("SCANNEZ · COMMANDEZ · DÉGUSTEZ", W / 2, 366);
+        x.fillStyle = "#F5F2EA";
+        x.font = "400 92px Figtree, sans-serif";
+        x.fillText("W E L L", PW / 2, 200);
+        x.fillStyle = "#C69A63";
+        x.font = "800 104px Figtree, sans-serif";
+        x.fillText("D O N E", PW / 2, 310);
+        x.fillStyle = "rgba(245,242,234,.55)";
+        x.font = "700 32px Figtree, sans-serif";
+        x.fillText("S C A N N E Z   ·   C O M M A N D E Z   ·   D É G U S T E Z", PW / 2, 380);
 
-        const cellW = (W - 220) / COLS;
-        const cellH = 700;
+        const cellW = (PW - 200) / COLS, cellH = 690;
         for (let i = 0; i < slice.length; i++) {
           const t = slice[i];
-          const cx = 110 + (i % COLS) * cellW + cellW / 2;
-          const cy = 470 + Math.floor(i / COLS) * cellH;
-          const qrPng = await QRCode.toDataURL(tablePortalUrl(t), { width: 460, margin: 1, color: { dark, light: "#FFFFFF" } });
+          const cx = 100 + (i % COLS) * cellW + cellW / 2;
+          const cy = 480 + Math.floor(i / COLS) * cellH;
+
+          x.fillStyle = "#F5F2EA";
+          roundRect(x, cx - 265, cy - 40, 530, 610, 34);
+          x.fill();
+
+          const png = await QRCode.toDataURL(tablePortalUrl(t), { width: 420, margin: 1, color: { dark: "#0F2413", light: "#F5F2EA" } });
           const img = new Image();
-          await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = qrPng; });
-          x.drawImage(img, cx - 230, cy, 460, 460);
-          x.fillStyle = BRAND.ink;
-          x.font = "900 58px Figtree, sans-serif";
-          x.fillText(`TABLE ${t}`, cx, cy + 550);
-          x.strokeStyle = "#D2D2D7";
-          x.lineWidth = 3;
-          x.setLineDash([14, 14]);
-          x.strokeRect(cx - 300, cy - 60, 600, 660);
-          x.setLineDash([]);
+          await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = png; });
+          x.drawImage(img, cx - 210, cy + 10, 420, 420);
+
+          x.fillStyle = "#0F2413";
+          x.font = "900 62px Figtree, sans-serif";
+          x.fillText(`TABLE ${t}`, cx, cy + 510);
         }
 
         const blob = await new Promise((res) => cv.toBlob(res, "image/png"));
-        const name = pages > 1
-          ? `qr-well-done-planche-${p + 1}sur${pages}.png`
-          : "qr-well-done-planche.png";
-        const ok = await saveFile(blob, name);
-        if (!ok) break; // partage annulé : on n'enchaîne pas les pages
+        const name = pages > 1 ? `qr-well-done-planche-${p + 1}sur${pages}.png` : "qr-well-done-planche.png";
+        if (!(await saveFile(blob, name))) break; // partage annulé
       }
-      toast.success("Planche QR prête à imprimer ✓");
+      toast.success("Planche prête à imprimer ✓");
     } catch {
       toast.error("Impossible de générer la planche");
     } finally {
@@ -593,144 +611,148 @@ function QRTab({ toast }) {
 
   return (
     <div>
-      <PageTitle
-        right={
-          <span style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <label style={{ ...FF, fontSize: 12.5, fontWeight: 700, color: C.textSecondary, display: "inline-flex", gap: 6, alignItems: "center" }}>
-              Encre
-              <input type="color" value={dark} onChange={(e) => setDark(e.target.value)} style={{ width: 30, height: 26, border: "none", background: "none", cursor: "pointer" }} />
-            </label>
-            <Btn size="sm" onClick={downloadSheet} disabled={busy} style={{ background: BRAND.green, color: "#FFF" }}>
-              {busy ? "Génération…" : "🖨️ Planche imprimable"}
-            </Btn>
-          </span>
-        }
-      >
-        🔳 QR Tables
-      </PageTitle>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(196px,1fr))", gap: 14 }}>
+      <PageHead
+        title="QR des tables"
+        sub="À coller sur chaque table — chaque code ouvre le portail avec le bon numéro"
+        right={<Btn size="sm" variant="gold" onClick={sheet} disabled={busy}><Icon name="print" size={15} /> {busy ? "Génération…" : "Planche A4"}</Btn>}
+      />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 14 }}>
         {TABLES.map((t) => (
-          <Surface key={t} style={{ textAlign: "center", padding: 15 }}>
-            <div style={{ ...FF, fontSize: 15, fontWeight: 900, color: C.text, marginBottom: 10 }} translate="no">Table {t}</div>
-            <canvas ref={(el) => (canvases.current[t] = el)} style={{ width: 150, height: 150, borderRadius: 10 }} />
-            <div style={{ display: "flex", gap: 7, marginTop: 12 }}>
-              <Btn variant="subtle" size="sm" full onClick={() => downloadOne(t)}>⬇️ PNG</Btn>
-              <Btn variant="subtle" size="sm" full onClick={() => window.open(tablePortalPath(t), "_blank")}>Ouvrir</Btn>
+          <Panel key={t} pad={16} style={{ textAlign: "center" }}>
+            <div style={{ ...label(10), color: W.gold, marginBottom: 12 }} translate="no">Table {t}</div>
+            <canvas ref={(el) => (canvases.current[t] = el)} style={{ width: 154, height: 154, borderRadius: 12, background: W.cream }} />
+            <div style={{ display: "flex", gap: 7, marginTop: 14 }}>
+              <Btn size="xs" variant="outline" onClick={() => one(t)} full><Icon name="download" size={13} /> PNG</Btn>
+              <Btn size="xs" variant="outline" onClick={() => window.open(tablePortalPath(t), "_blank")} full>Ouvrir</Btn>
             </div>
-          </Surface>
+          </Panel>
         ))}
       </div>
     </div>
   );
 }
 
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
 /* ----------------------- CRM ----------------------- */
 
-function CRMTab() {
-  const customers = readCustomers().slice().sort((a, b) => b.spent - a.spent);
-  const total = customers.reduce((s, c) => s + c.spent, 0);
+function CRM() {
+  const list = readCustomers().slice().sort((a, b) => b.spent - a.spent);
+  const total = list.reduce((s, c) => s + c.spent, 0);
+  const orders = list.reduce((s, c) => s + c.orders, 0);
+
   return (
     <div>
-      <PageTitle>👥 Clients</PageTitle>
+      <PageHead title="Fichier clients" sub="Alimenté automatiquement à chaque commande identifiée" />
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 18 }}>
-        <KPICard label="Fiches clients" value={customers.length} />
-        <KPICard label="Chiffre d'affaires cumulé" value={fmtEuro(total)} color={BRAND.green} />
-        <KPICard label="Panier moyen" value={customers.length ? fmtEuro(total / customers.reduce((s, c) => s + c.orders, 0)) : "—"} />
+        <Stat label="Fiches" value={list.length} />
+        <Stat label="CA cumulé" value={fmtEuro(total)} tone="gold" />
+        <Stat label="Panier moyen" value={orders ? fmtEuro(total / orders) : "—"} />
       </div>
-      <Surface style={{ padding: "6px 18px" }}>
-        {customers.length === 0 && (
-          <div style={{ ...FF, padding: 14, color: C.textTertiary, fontSize: 14 }}>
-            Aucun client enregistré. Chaque commande identifiée crée une fiche automatiquement.
-          </div>
-        )}
-        {customers.map((c, i) => (
-          <div key={c.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "12px 0", borderBottom: i < customers.length - 1 ? `1px solid ${C.border}` : "none", flexWrap: "wrap" }}>
-            <span>
-              <b style={{ ...FF, fontSize: 14, color: C.text }}>{c.name}</b>
-              <span style={{ ...FF, fontSize: 12.5, color: C.textSecondary, display: "block", marginTop: 2 }}>
-                {[c.phone, c.email, c.city].filter(Boolean).join(" · ") || "—"}
+      <Panel pad={0}>
+        {list.length === 0 ? (
+          <Empty icon={<Icon name="users" size={32} />} title="Aucun client encore" sub="Passez une commande depuis la vue client pour créer une fiche." />
+        ) : (
+          list.map((c, i) => (
+            <div key={c.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "14px 18px", borderBottom: i < list.length - 1 ? `1px solid ${W.lineSoft}` : "none", flexWrap: "wrap" }}>
+              <span>
+                <b style={{ ...FONT, fontSize: 14, color: W.text }}>{c.name}</b>
+                <span style={{ ...FONT, fontSize: 12.5, color: W.textDim, display: "block", marginTop: 3 }}>
+                  {[c.phone, c.email, c.city].filter(Boolean).join(" · ") || "—"}
+                </span>
               </span>
-            </span>
-            <span style={{ ...FF, fontSize: 13, color: C.textSecondary, textAlign: "right" }} translate="no">
-              <b style={{ color: C.text, fontSize: 14 }}>{fmtEuro(c.spent)}</b>
-              <span style={{ display: "block" }}>{c.orders} commande(s) · {c.last}</span>
-            </span>
-          </div>
-        ))}
-      </Surface>
+              <span style={{ textAlign: "right" }} translate="no">
+                <b style={{ ...display(16), ...goldText }}>{fmtEuro(c.spent)}</b>
+                <span style={{ ...FONT, fontSize: 12, color: W.textDim, display: "block", marginTop: 3 }}>
+                  {c.orders} commande(s) · {c.last}
+                </span>
+              </span>
+            </div>
+          ))
+        )}
+      </Panel>
     </div>
   );
 }
 
 /* ----------------------- Livraison ----------------------- */
 
-function DeliveryTab({ orders }) {
-  const deliveries = orders.filter((o) => o.mode === "livraison");
+function Delivery({ orders }) {
+  const list = orders.filter((o) => o.mode === "livraison");
   return (
     <div>
-      <PageTitle>🛵 Livraison</PageTitle>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))", gap: 14, marginBottom: 20 }}>
+      <PageHead title="Livraison" sub="Zones desservies et minimum de commande" />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 12, marginBottom: 22 }}>
         {DELIVERY_ZONES.map((z) => {
-          const n = deliveries.filter((o) => o.zone === z.label).length;
+          const n = list.filter((o) => o.zone === z.label).length;
           return (
-            <Surface key={z.id}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <b style={{ ...FF, fontSize: 15, fontWeight: 900, color: C.text }}>{z.label}</b>
-                <Tag color={BRAND.green}><span translate="no">min. {fmtEuro(z.min)}</span></Tag>
+            <Panel key={z.id} pad={17}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                <b style={{ ...display(17), color: W.text }}>{z.label}</b>
+                <Chip tone="gold"><span translate="no">min. {fmtEuro(z.min)}</span></Chip>
               </div>
-              <div style={{ ...FF, fontSize: 12.5, color: C.textSecondary, marginTop: 8, lineHeight: 1.5 }}>
+              <div style={{ ...FONT, fontSize: 12.5, color: W.textSoft, marginTop: 10, lineHeight: 1.55 }}>
                 {z.cities.length ? z.cities.join(", ") : "Toute autre commune"}
               </div>
-              <div style={{ ...FF, fontSize: 12.5, fontWeight: 700, color: C.textTertiary, marginTop: 8 }} translate="no">
+              <div style={{ ...FONT, fontSize: 12, color: W.textDim, marginTop: 10 }} translate="no">
                 {n} livraison(s) aujourd'hui
               </div>
-            </Surface>
+            </Panel>
           );
         })}
       </div>
 
-      <SectionTitle>Livraisons du jour</SectionTitle>
-      <Surface style={{ padding: "6px 18px" }}>
-        {deliveries.length === 0 && (
-          <div style={{ ...FF, padding: 14, color: C.textTertiary, fontSize: 14 }}>Aucune livraison aujourd'hui.</div>
+      <SectionLabel>Livraisons du jour</SectionLabel>
+      <Panel pad={0}>
+        {list.length === 0 ? (
+          <Empty icon={<Icon name="delivery" size={32} />} title="Aucune livraison aujourd'hui" />
+        ) : (
+          list.map((o, i) => (
+            <div key={o.id} style={{ padding: "14px 18px", borderBottom: i < list.length - 1 ? `1px solid ${W.lineSoft}` : "none" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                <b style={{ ...FONT, fontSize: 14, color: W.text }} translate="no">{o.ref} · {o.customer?.name}</b>
+                <b style={{ ...FONT, fontSize: 14, color: W.gold }} translate="no">{fmtEuro(o.total)}</b>
+              </div>
+              <div style={{ ...FONT, fontSize: 12.5, color: W.textDim, marginTop: 4 }}>
+                {o.customer?.address}, {o.customer?.city} · {o.zone} · {o.customer?.phone}
+              </div>
+            </div>
+          ))
         )}
-        {deliveries.map((o, i) => (
-          <div key={o.id} style={{ padding: "12px 0", borderBottom: i < deliveries.length - 1 ? `1px solid ${C.border}` : "none" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-              <b style={{ ...FF, fontSize: 14, color: C.text }} translate="no">{o.ref} · {o.customer?.name}</b>
-              <span style={{ ...FF, fontSize: 13.5, fontWeight: 800, color: C.text }} translate="no">{fmtEuro(o.total)}</span>
-            </div>
-            <div style={{ ...FF, fontSize: 12.5, color: C.textSecondary, marginTop: 3 }}>
-              📍 {o.customer?.address}, {o.customer?.city} · {o.zone} · {o.customer?.phone}
-            </div>
-          </div>
-        ))}
-      </Surface>
+      </Panel>
     </div>
   );
 }
 
-/* ----------------------- Activité ----------------------- */
+/* ----------------------- Journal ----------------------- */
 
-function ActivityTab() {
+function Activity() {
   useTick(5000);
   const items = readActivity();
   return (
     <div>
-      <PageTitle>🕑 Journal d'activité</PageTitle>
-      <Surface style={{ padding: "6px 18px" }}>
-        {items.length === 0 && (
-          <div style={{ ...FF, padding: 14, color: C.textTertiary, fontSize: 14 }}>Rien à afficher pour l'instant.</div>
+      <PageHead title="Journal d'activité" sub="Chaque évènement du service, horodaté" />
+      <Panel pad={0}>
+        {items.length === 0 ? (
+          <Empty icon={<Icon name="journal" size={32} />} title="Rien à afficher" />
+        ) : (
+          items.map((a, i) => (
+            <div key={a.id} style={{ display: "flex", gap: 13, alignItems: "center", padding: "13px 18px", borderBottom: i < items.length - 1 ? `1px solid ${W.lineSoft}` : "none" }}>
+              <span style={{ fontSize: 17 }}>{a.emoji}</span>
+              <span style={{ ...FONT, flex: 1, fontSize: 13.5, color: W.text }}>{a.text}</span>
+              <span style={{ ...FONT, fontSize: 12, color: W.textDim, flexShrink: 0 }} translate="no">{timeAgo(a.ts)}</span>
+            </div>
+          ))
         )}
-        {items.map((a, i) => (
-          <div key={a.id} style={{ display: "flex", gap: 12, alignItems: "center", padding: "11px 0", borderBottom: i < items.length - 1 ? `1px solid ${C.border}` : "none" }}>
-            <span style={{ fontSize: 19 }}>{a.emoji}</span>
-            <span style={{ ...FF, flex: 1, fontSize: 13.5, color: C.text }}>{a.text}</span>
-            <span style={{ ...FF, fontSize: 12, color: C.textTertiary, flexShrink: 0 }} translate="no">{timeAgo(a.ts)}</span>
-          </div>
-        ))}
-      </Surface>
+      </Panel>
     </div>
   );
 }

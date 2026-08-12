@@ -4,6 +4,7 @@ import HotelApp from "./App.jsx";
 import RestoApp from "./resto/RestoApp.jsx";
 import RestoPortal from "./resto/Client.jsx";
 import { logScan, ensureSeed } from "./resto/data.js";
+import { WDStyles } from "./resto/ui.jsx";
 
 /* ==========================================================================
    Aiguillage entre les deux verticales de démonstration.
@@ -34,22 +35,29 @@ const IDENTITY = {
   resto: {
     title: "Well Done — Le smash burger, commandé au QR code",
     emoji: "🍔",
+    bg: "#0A1A0D",
+    theme: "#0F2413",
   },
   hotel: {
     title: "Wegemo Hôtel — L'hôtel, réinventé par le QR code",
     emoji: "🏨",
+    bg: "#F5F5F7",
+    theme: "#1D1D1F",
   },
 };
 
 function applyIdentity(kind) {
   const id = IDENTITY[kind];
   document.title = id.title;
+  document.body.style.background = id.bg;
   const icon = document.querySelector("link[rel='icon']");
   if (icon) {
     icon.href =
       "data:image/svg+xml," +
       `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${id.emoji}</text></svg>`;
   }
+  const theme = document.querySelector("meta[name='theme-color']");
+  if (theme) theme.content = id.theme;
 }
 
 function Routed() {
@@ -89,6 +97,7 @@ export default function Root() {
   return (
     <ToastProvider>
       <GlobalStyles />
+      <WDStyles />
       <Routed />
     </ToastProvider>
   );

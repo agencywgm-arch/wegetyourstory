@@ -11,7 +11,7 @@
     <!-- Métadonnées par défaut = Well Done, servi à la racine. Root.jsx les
          bascule sur la verticale hôtelière quand la route l'exige. -->
     <meta name="description" content="Well Done — smash burgers Black Angus commandés au QR code de la table. Carte, composition, paiement et suivi en temps réel, sans installer d'application." />
-    <meta name="theme-color" content="#1D1D1F" />
+    <meta name="theme-color" content="#0F2413" />
     <meta property="og:title" content="Well Done — Le smash burger, commandé au QR code" />
     <meta property="og:description" content="Le client scanne le QR de sa table, compose son burger et paie depuis son téléphone. La cuisine reçoit la commande dans la seconde." />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍔</text></svg>" />
@@ -25,7 +25,9 @@
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
       html, body, #root { min-height: 100%; }
-      body { background: #f5f5f7; -webkit-font-smoothing: antialiased; }
+      /* Fond sombre par défaut (Well Done) : Root.jsx l'éclaircit pour la
+         verticale hôtelière. Évite le flash blanc avant montage. */
+      body { background: #0A1A0D; -webkit-font-smoothing: antialiased; }
       input, select, textarea, button { font-family: inherit; }
     </style>
   </head>
