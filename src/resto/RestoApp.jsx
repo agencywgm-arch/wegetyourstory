@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { W, FONT, display, label, glass, goldText, brandPattern } from "./theme.js";
-import { Screen, Panel, Btn, Chip } from "./ui.jsx";
+import { Screen, Panel, Btn, Chip, Dish } from "./ui.jsx";
 import { Logo, Tagline, BurgerGlyph, LogoBadge } from "./Logo.jsx";
 import { BRAND, CATEGORIES, DELIVERY_ZONES, WELL_DONE_MENU, ensureSeed, useOrders } from "./data.js";
 import Manager, { tablePortalUrl } from "./Manager.jsx";
@@ -201,7 +201,7 @@ function Interfaces({ go }) {
 }
 
 function MenuPreview() {
-  const stars = WELL_DONE_MENU.filter((m) => ["b-welldone", "b-smoky", "b-phily", "c-pilipli"].includes(m.id));
+  const stars = WELL_DONE_MENU.filter((m) => ["b-welldone", "b-bigsmash", "c-avocado", "p-truffle"].includes(m.id));
   return (
     <section style={{ maxWidth: 1120, margin: "0 auto", padding: "64px 20px 10px" }}>
       <div style={{ textAlign: "center", marginBottom: 30 }}>
@@ -218,7 +218,7 @@ function MenuPreview() {
         {stars.map((m) => (
           <Panel key={m.id} pad={20}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-              <span style={{ fontSize: 26 }}>{m.emoji}</span>
+              <Dish item={m} size={50} radius={15} fontSize={26} />
               <b style={{ ...display(19), ...goldText }} translate="no">{m.price.toFixed(2).replace(".", ",")} €</b>
             </div>
             <div style={{ ...display(18), color: W.text, marginTop: 14 }}>{m.name}</div>

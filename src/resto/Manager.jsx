@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import QRCode from "qrcode";
 import { W, FONT, display, label, glass, goldText } from "./theme.js";
-import { Screen, Panel, Btn, Chip, Field, Sheet, Stat, PageHead, SectionLabel, Empty, Segmented } from "./ui.jsx";
+import { Screen, Panel, Btn, Chip, Field, Sheet, Stat, PageHead, SectionLabel, Empty, Segmented, Dish } from "./ui.jsx";
 import { Logo } from "./Logo.jsx";
 import {
   BRAND, TABLES, CATEGORIES, MODE_META, STATUS_META, DELIVERY_ZONES,
@@ -484,7 +484,7 @@ function MenuAdmin({ menu, setMenu, toast }) {
           return (
             <Panel key={m.id} pad={16} style={{ opacity: off ? 0.55 : 1 }}>
               <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                <span style={{ fontSize: 22 }}>{m.emoji}</span>
+                <Dish item={m} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                     <b style={{ ...display(16), color: W.text }}>{m.name}</b>
@@ -495,7 +495,7 @@ function MenuAdmin({ menu, setMenu, toast }) {
                       {m.desc.length > 78 ? m.desc.slice(0, 78) + "…" : m.desc}
                     </div>
                   )}
-                  <div style={{ display: "flex", gap: 7, marginTop: 12 }}>
+                  <div style={{ display: "flex", gap: 7, marginTop: 12, alignItems: "center", flexWrap: "wrap" }}>
                     <Btn size="xs" variant="outline" onClick={() => setEdit(m)}>Modifier</Btn>
                     <Btn
                       size="xs"
@@ -504,6 +504,7 @@ function MenuAdmin({ menu, setMenu, toast }) {
                     >
                       {off ? "Épuisé" : "En vente"}
                     </Btn>
+                    {m.estimatedPrice && <Chip tone="warn" style={{ fontSize: 10 }}>Prix à valider</Chip>}
                   </div>
                 </div>
               </div>

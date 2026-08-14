@@ -1,6 +1,31 @@
 import { useState, useEffect, useCallback } from "react";
 import { readLS, writeLS, uid, nowTime, todayISO } from "../shared/ui.jsx";
 
+/* Photos produit fournies par l'enseigne (welldone-burger.com). Un article
+   sans entrée ici reste illustré par son emoji. */
+import imgWellDone from "./dishes/well-done.jpg";
+import imgCheese from "./dishes/cheese.jpg";
+import imgSmokyBeef from "./dishes/smoky-beef.jpg";
+import imgAvocado from "./dishes/avocado.jpg";
+import imgSmokyChicn from "./dishes/smoky-chicn.jpg";
+import imgFritesBacon from "./dishes/frites-cheddar-bacon.jpg";
+import imgFrenchToast from "./dishes/french-toast.jpg";
+import imgHotDog from "./dishes/hot-dog.jpg";
+import imgBigSmash from "./dishes/big-smash.jpg";
+import imgBahnMi from "./dishes/bahn-mi.jpg";
+import imgFlaminChicn from "./dishes/flamin-chicn.jpg";
+import imgSalade from "./dishes/salade.jpg";
+import imgChicnPop from "./dishes/chicn-pop.jpg";
+import imgCupDubai from "./dishes/cup-dubai.jpg";
+import imgCookieGourmet from "./dishes/cookie-gourmet.jpg";
+import imgTiramisu from "./dishes/tiramisu.jpg";
+import imgTrayChicn from "./dishes/tray-chicn.jpg";
+import imgTrayWellDone from "./dishes/tray-well-done.jpg";
+import imgPhilyOriginal from "./dishes/phily-original.jpg";
+import imgPhilyTruffle from "./dishes/phily-truffle.jpg";
+import imgPhilyBoursin from "./dishes/phily-boursin.jpg";
+import imgPhilyCrispyChicn from "./dishes/phily-crispy-chicn.jpg";
+
 /* ==========================================================================
    WELL DONE — données de l'établissement et carte pré-configurée.
    Reprise fidèle de la carte papier (smash burgers, chicken, hot dogs,
@@ -98,27 +123,36 @@ const optionsSauceOnly = () => [SAUCES_SUPP];
 export const CATEGORIES = [
   { id: "smash", label: "Smash Burger", emoji: "🍔", note: "Black Angus Beef · Frites + boisson soft + 3 €" },
   { id: "chicken", label: "Chicken Burger", emoji: "🐔", note: "Frites + boisson soft + 3,50 €" },
+  { id: "phillys", label: "Phily's", emoji: "🥖", note: "Cheesesteak — sandwich, à ne pas confondre avec le burger Phily" },
+  { id: "trays", label: "Nos Trays", emoji: "🍱", note: "Formule complète : frites + boisson incluses" },
   { id: "hotdog", label: "Hot Dog", emoji: "🌭", note: "Frites + boisson soft + 3,50 €" },
+  { id: "salade", label: "Salade", emoji: "🥗" },
   { id: "frites", label: "Nos frites", emoji: "🍟" },
   { id: "add", label: "Add", emoji: "🍗" },
   { id: "desserts", label: "Desserts", emoji: "🍨" },
   { id: "boissons", label: "Boissons", emoji: "🥤" },
 ];
 
+/* Articles absents de la carte papier mais présents sur welldone-burger.com :
+   photographiés par l'enseigne, sans prix communiqué. Le prix est une
+   estimation par comparaison avec des articles voisins de la carte —
+   signalée par estimatedPrice et à valider avant mise en production. */
+const est = (price) => ({ price, estimatedPrice: true });
+
 export const WELL_DONE_MENU = [
   /* --- Smash Burger Angus Beef --- */
   {
-    id: "b-welldone", category: "smash", name: "Well Done", price: 9.5, emoji: "🍔",
+    id: "b-welldone", category: "smash", name: "Well Done", price: 9.5, emoji: "🍔", image: imgWellDone,
     desc: "Bun's potato, black angus steak, cheddar américain, pickles, salade, tomate, sauce originale",
     badge: "Signature", options: optionsBurger(),
   },
   {
-    id: "b-cheese", category: "smash", name: "Cheese", price: 8.9, emoji: "🧀",
+    id: "b-cheese", category: "smash", name: "Cheese", price: 8.9, emoji: "🧀", image: imgCheese,
     desc: "Bun's potato, black angus steak, cheddar américain, pickles, oignon frais, ketchup, moutarde américaine",
     options: optionsBurger(),
   },
   {
-    id: "b-smoky", category: "smash", name: "Smoky", price: 10.9, emoji: "🔥",
+    id: "b-smoky", category: "smash", name: "Smoky Beef", price: 10.9, emoji: "🔥", image: imgSmokyBeef,
     desc: "Bun's potato, black angus steak, cheddar américain, bacon de bœuf, oignon caramélisé, salade, tomate, sauce barbecue",
     options: optionsBurger(),
   },
@@ -132,6 +166,16 @@ export const WELL_DONE_MENU = [
     desc: "Bun's potato, black angus steak, cheddar mature, champignon frais grillé, salade, tomate, philadelphia cheese",
     options: optionsBurger(),
   },
+  {
+    id: "b-bigsmash", category: "smash", name: "Big Smash", ...est(12.9), emoji: "🍔", image: imgBigSmash,
+    desc: "Bun's potato, quadruple steak black angus smashés, cheddar américain, oignon frais, pickles, salade",
+    options: optionsBurger(),
+  },
+  {
+    id: "b-bahnmi", category: "smash", name: "Bahn Mi", ...est(10.9), emoji: "🍔", image: imgBahnMi,
+    desc: "Un sandwich vietnamien en smash burger : porc caramélisé, carotte, concombre, coriandre, sauce épicée",
+    options: optionsBurger(),
+  },
 
   /* --- Chicken Burger --- */
   {
@@ -140,12 +184,12 @@ export const WELL_DONE_MENU = [
     options: optionsChicken(),
   },
   {
-    id: "c-avocado", category: "chicken", name: "Avocado chic'n", price: 9.5, emoji: "🥑",
+    id: "c-avocado", category: "chicken", name: "L'Avocado", price: 9.5, emoji: "🥑", image: imgAvocado,
     desc: "Bun's potato, filet de poulet pané, cheddar américain, avocat, tomate, sauce basilic",
     options: optionsChicken(),
   },
   {
-    id: "c-smoky", category: "chicken", name: "Smoky chic'n", price: 9.5, emoji: "🔥",
+    id: "c-smoky", category: "chicken", name: "Smoky chic'n", price: 9.5, emoji: "🔥", image: imgSmokyChicn,
     desc: "Bun's potato, filet de poulet pané, cheddar américain, bacon de bœuf, oignon caramélisé, sauce barbecue",
     options: optionsChicken(),
   },
@@ -154,10 +198,49 @@ export const WELL_DONE_MENU = [
     desc: "Bun's potato, filet de poulet pané, cheddar, jalapeños, tomates, sauce épicée",
     badge: "Épicé", options: optionsChicken(),
   },
+  {
+    id: "c-flamin", category: "chicken", name: "Flamin Chic'N", ...est(10.9), emoji: "🐔", image: imgFlaminChicn,
+    desc: "Bun's potato, filet de poulet pané, chips Cheetos flamin' hot, cheddar fondu, sauce épicée",
+    badge: "Épicé", options: optionsChicken(),
+  },
+
+  /* --- Phily's (cheesesteak — différent du burger Phily) --- */
+  {
+    id: "p-original", category: "phillys", name: "The Original Phily's", ...est(10.9), emoji: "🥖", image: imgPhilyOriginal,
+    desc: "Bœuf effiloché, cheddar fondu, oignon caramélisé, salade, sauce originale — la vraie recette philly",
+    options: optionsBurger(),
+  },
+  {
+    id: "p-truffle", category: "phillys", name: "The Truffle Phily's", ...est(12.9), emoji: "🥖", image: imgPhilyTruffle,
+    desc: "Bœuf effiloché, champignons, cheddar fondu, roquette, sauce à la truffe",
+    badge: "Premium", options: optionsBurger(),
+  },
+  {
+    id: "p-boursin", category: "phillys", name: "Phily's Boursin", ...est(9.9), emoji: "🥖", image: imgPhilyBoursin,
+    desc: "Poulet mariné grillé, cheddar fondu, sauce boursin maison",
+    options: optionsChicken(),
+  },
+  {
+    id: "p-crispychicn", category: "phillys", name: "Phily's Crispy Chic'N", ...est(9.9), emoji: "🥖", image: imgPhilyCrispyChicn,
+    desc: "Filet de poulet croustillant, sauce maison, oignon frais, salade",
+    options: optionsChicken(),
+  },
+
+  /* --- Nos Trays (formule plateau : frites + boisson incluses) --- */
+  {
+    id: "t-chicn", category: "trays", name: "Tray Chic'N", ...est(14.9), emoji: "🍱", image: imgTrayChicn,
+    desc: "Poulet pané avec une sauce fait maison au choix, des frites et une boisson",
+    options: optionsSauceOnly(),
+  },
+  {
+    id: "t-welldone", category: "trays", name: "Tray Well Done", ...est(15.9), emoji: "🍱", image: imgTrayWellDone,
+    desc: "Tenders, cheddar fondu, bacon de bœuf, frites et une boisson",
+    options: optionsSauceOnly(),
+  },
 
   /* --- Hot Dog --- */
   {
-    id: "h-ny", category: "hotdog", name: "New-yorkais", price: 5.9, emoji: "🌭",
+    id: "h-ny", category: "hotdog", name: "New-yorkais", price: 5.9, emoji: "🌭", image: imgHotDog,
     desc: "Bun's potato hot dog, saucisse de bœuf, relish pickles, crispy oignon, ketchup, moutarde américaine",
     options: optionsHotdog(),
   },
@@ -172,11 +255,17 @@ export const WELL_DONE_MENU = [
     options: optionsHotdog(),
   },
 
+  /* --- Salade --- */
+  {
+    id: "sal-complete", category: "salade", name: "Salade Well Done", ...est(11.9), emoji: "🥗", image: imgSalade,
+    desc: "Tenders de poulet croustillant, bœuf pastrami, avocat, tomates cerises, jeunes pousses, vinaigrette maison",
+  },
+
   /* --- Nos frites --- */
   { id: "f-nature", category: "frites", name: "Frites", price: 3, emoji: "🍟", options: optionsSauceOnly() },
   { id: "f-cheddar", category: "frites", name: "Frites cheddar", price: 4, emoji: "🧀", options: optionsSauceOnly() },
   { id: "f-jalapenos", category: "frites", name: "Frites cheddar jalapeños", price: 4.5, emoji: "🌶️", options: optionsSauceOnly() },
-  { id: "f-bacon", category: "frites", name: "Frites cheddar bacon", price: 5, emoji: "🥓", options: optionsSauceOnly() },
+  { id: "f-bacon", category: "frites", name: "Frites cheddar bacon", price: 5, emoji: "🥓", image: imgFritesBacon, options: optionsSauceOnly() },
 
   /* --- Add --- */
   { id: "a-nuggets", category: "add", name: "Chicken Nuggets ×5", price: 4.5, emoji: "🍗", options: optionsSauceOnly() },
@@ -185,12 +274,32 @@ export const WELL_DONE_MENU = [
   { id: "a-tenders", category: "add", name: "Tenders ×3", price: 4.5, emoji: "🍗", options: optionsSauceOnly() },
   { id: "a-chevre", category: "add", name: "Sticks chèvre miel ×4", price: 4.5, emoji: "🍯", options: optionsSauceOnly() },
   { id: "a-onion", category: "add", name: "Oignon rings ×6", price: 4.5, emoji: "🧅", options: optionsSauceOnly() },
+  {
+    id: "a-chicnpop", category: "add", name: "Chic'n Pop", ...est(6.9), emoji: "🍗", image: imgChicnPop,
+    desc: "Poulet pop-corn façon coréenne, sauce sucrée-épicée, sésame", options: optionsSauceOnly(),
+  },
 
   /* --- Desserts --- */
   { id: "d-mousse", category: "desserts", name: "Mousse chocolat", price: 3.9, emoji: "🍫" },
   { id: "d-cookie", category: "desserts", name: "Cookie façon brownie", price: 3.5, emoji: "🍪" },
   { id: "d-cheesecake", category: "desserts", name: "Cheesecake framboise", price: 4.5, emoji: "🍰" },
-  { id: "d-brioche", category: "desserts", name: "Brioche perdue caramel beurre salé", price: 3.5, emoji: "🍞" },
+  {
+    id: "d-brioche", category: "desserts", name: "French Toast", price: 3.5, emoji: "🍞", image: imgFrenchToast,
+    desc: "Pain perdu maison, sauce caramel beurre salé et chocolat, chantilly",
+  },
+  {
+    id: "d-cookiegourmet", category: "desserts", name: "Cookie Gourmet", ...est(6.5), emoji: "🍪", image: imgCookieGourmet,
+    desc: "Cookie fondant et croustillant, glace vanille, éclats de biscuit, sauce caramel",
+  },
+  {
+    id: "d-tiramisu", category: "desserts", name: "Tiramisu", ...est(4.9), emoji: "🍮", image: imgTiramisu,
+    desc: "Tiramisu maison en pot, biscuit imbibé, mascarpone",
+  },
+  {
+    id: "d-cupdubai", category: "desserts", name: "Cup Dubai", ...est(6.9), emoji: "🍫", image: imgCupDubai,
+    desc: "Cup façon chocolat Dubaï : pistache, kadaïf croustillant, fraises fraîches",
+    badge: "Tendance",
+  },
 
   /* --- Boissons --- */
   {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { W, FONT, display, label, glass, goldText } from "./theme.js";
-import { Screen, Panel, Btn, Chip, Field, Select, Sheet, Stepper, SectionLabel, Empty } from "./ui.jsx";
+import { Screen, Panel, Btn, Chip, Field, Select, Sheet, Stepper, SectionLabel, Empty, Dish } from "./ui.jsx";
 import { Logo, Tagline, BurgerGlyph } from "./Logo.jsx";
 import {
   BRAND, CATEGORIES, MODE_META, STATUS_META, DELIVERY_ZONES,
@@ -249,15 +249,7 @@ function MenuView({ menu, mode, table, cart, openItem, goCart, back }) {
               <div style={{ display: "grid", gap: 10, marginTop: c.note ? 0 : 14 }}>
                 {items.map((m) => (
                   <Panel key={m.id} hover pad={16} onClick={() => openItem(m)} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                    <span
-                      style={{
-                        fontSize: 24, flexShrink: 0, width: 46, height: 46, borderRadius: 14,
-                        background: "rgba(198,154,99,.11)", border: `1px solid ${W.line}`,
-                        display: "inline-flex", alignItems: "center", justifyContent: "center",
-                      }}
-                    >
-                      {m.emoji}
-                    </span>
+                    <Dish item={m} />
                     <span style={{ flex: 1, minWidth: 0 }}>
                       <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                         <b style={{ ...display(17), color: W.text }}>{m.name}</b>
@@ -325,7 +317,12 @@ function Composer({ item, onClose, onAdd }) {
 
   return (
     <Sheet
-      title={`${item.emoji} ${item.name}`}
+      title={
+        <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <Dish item={item} size={36} radius={11} fontSize={18} />
+          {item.name}
+        </span>
+      }
       sub={item.desc}
       onClose={onClose}
       footer={
@@ -336,7 +333,7 @@ function Composer({ item, onClose, onAdd }) {
             style={{ flex: 1 }}
             onClick={() =>
               onAdd({
-                key: uid(), item_id: item.id, name: item.name, emoji: item.emoji, qty, unit,
+                key: uid(), item_id: item.id, name: item.name, emoji: item.emoji, image: item.image, qty, unit,
                 total: Math.round(unit * qty * 100) / 100,
                 opts: optionLabels(item, sel), note: note.trim(),
               })
@@ -416,7 +413,7 @@ function CartView({ cart, setCart, mode, table, back, goCheckout }) {
               {cart.map((l) => (
                 <Panel key={l.key} pad={16}>
                   <div style={{ display: "flex", gap: 13, alignItems: "flex-start" }}>
-                    <span style={{ fontSize: 22, flexShrink: 0 }}>{l.emoji}</span>
+                    <Dish item={l} size={40} radius={12} fontSize={20} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ ...display(17), color: W.text }}>{l.name}</div>
                       {l.opts.length > 0 && (
