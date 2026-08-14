@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { readLS, writeLS, uid, nowTime, todayISO } from "../shared/ui.jsx";
+import { MODE_ICON } from "./icons.jsx";
 
 /* Photos produit fournies par l'enseigne (welldone-burger.com). Un article
-   sans entrée ici reste illustré par son emoji. */
+   sans entrée ici reste illustré par l'icône de sa catégorie. */
 import imgWellDone from "./dishes/well-done.jpg";
 import imgCheese from "./dishes/cheese.jpg";
 import imgSmokyBeef from "./dishes/smoky-beef.jpg";
@@ -37,7 +38,6 @@ export const BRAND = {
   slug: "well-done",
   name: "WELL DONE",
   tagline: "BIEN FAIT, SI FRAIS",
-  logo_emoji: "🍔",
   city: "Livry-Gargan",
   phone: "01 43 00 00 00",
   snapchat: "welldone_burger",
@@ -121,16 +121,16 @@ const optionsSauceOnly = () => [SAUCES_SUPP];
 /* ----------------------- La carte ----------------------- */
 
 export const CATEGORIES = [
-  { id: "smash", label: "Smash Burger", emoji: "🍔", note: "Black Angus Beef · Frites + boisson soft + 3 €" },
-  { id: "chicken", label: "Chicken Burger", emoji: "🐔", note: "Frites + boisson soft + 3,50 €" },
-  { id: "phillys", label: "Phily's", emoji: "🥖", note: "Cheesesteak — sandwich, à ne pas confondre avec le burger Phily" },
-  { id: "trays", label: "Nos Trays", emoji: "🍱", note: "Formule complète : frites + boisson incluses" },
-  { id: "hotdog", label: "Hot Dog", emoji: "🌭", note: "Frites + boisson soft + 3,50 €" },
-  { id: "salade", label: "Salade", emoji: "🥗" },
-  { id: "frites", label: "Nos frites", emoji: "🍟" },
-  { id: "add", label: "Add", emoji: "🍗" },
-  { id: "desserts", label: "Desserts", emoji: "🍨" },
-  { id: "boissons", label: "Boissons", emoji: "🥤" },
+  { id: "smash", label: "Smash Burger", icon: "burger", note: "Black Angus Beef · Frites + boisson soft + 3 €" },
+  { id: "chicken", label: "Chicken Burger", icon: "drumstick", note: "Frites + boisson soft + 3,50 €" },
+  { id: "phillys", label: "Phily's", icon: "sandwich", note: "Cheesesteak — sandwich, à ne pas confondre avec le burger Phily" },
+  { id: "trays", label: "Nos Trays", icon: "tray", note: "Formule complète : frites + boisson incluses" },
+  { id: "hotdog", label: "Hot Dog", icon: "hotdog", note: "Frites + boisson soft + 3,50 €" },
+  { id: "salade", label: "Salade", icon: "salad" },
+  { id: "frites", label: "Nos frites", icon: "fries" },
+  { id: "add", label: "Add", icon: "extras" },
+  { id: "desserts", label: "Desserts", icon: "dessert" },
+  { id: "boissons", label: "Boissons", icon: "drink" },
 ];
 
 /* Articles absents de la carte papier mais présents sur welldone-burger.com :
@@ -142,168 +142,168 @@ const est = (price) => ({ price, estimatedPrice: true });
 export const WELL_DONE_MENU = [
   /* --- Smash Burger Angus Beef --- */
   {
-    id: "b-welldone", category: "smash", name: "Well Done", price: 9.5, emoji: "🍔", image: imgWellDone,
+    id: "b-welldone", category: "smash", name: "Well Done", price: 9.5, image: imgWellDone,
     desc: "Bun's potato, black angus steak, cheddar américain, pickles, salade, tomate, sauce originale",
     badge: "Signature", options: optionsBurger(),
   },
   {
-    id: "b-cheese", category: "smash", name: "Cheese", price: 8.9, emoji: "🧀", image: imgCheese,
+    id: "b-cheese", category: "smash", name: "Cheese", price: 8.9, image: imgCheese,
     desc: "Bun's potato, black angus steak, cheddar américain, pickles, oignon frais, ketchup, moutarde américaine",
     options: optionsBurger(),
   },
   {
-    id: "b-smoky", category: "smash", name: "Smoky Beef", price: 10.9, emoji: "🔥", image: imgSmokyBeef,
+    id: "b-smoky", category: "smash", name: "Smoky Beef", price: 10.9, image: imgSmokyBeef,
     desc: "Bun's potato, black angus steak, cheddar américain, bacon de bœuf, oignon caramélisé, salade, tomate, sauce barbecue",
     options: optionsBurger(),
   },
   {
-    id: "b-truffle", category: "smash", name: "Truffle", price: 10.9, emoji: "🍄",
+    id: "b-truffle", category: "smash", name: "Truffle", price: 10.9,
     desc: "Bun's potato, black angus steak, cheddar mature, oignon caramélisé, salade, tomate, sauce à la truffe",
     options: optionsBurger(),
   },
   {
-    id: "b-phily", category: "smash", name: "Phily", price: 11.9, emoji: "🥓",
+    id: "b-phily", category: "smash", name: "Phily", price: 11.9,
     desc: "Bun's potato, black angus steak, cheddar mature, champignon frais grillé, salade, tomate, philadelphia cheese",
     options: optionsBurger(),
   },
   {
-    id: "b-bigsmash", category: "smash", name: "Big Smash", ...est(12.9), emoji: "🍔", image: imgBigSmash,
+    id: "b-bigsmash", category: "smash", name: "Big Smash", ...est(12.9), image: imgBigSmash,
     desc: "Bun's potato, quadruple steak black angus smashés, cheddar américain, oignon frais, pickles, salade",
     options: optionsBurger(),
   },
   {
-    id: "b-bahnmi", category: "smash", name: "Bahn Mi", ...est(10.9), emoji: "🍔", image: imgBahnMi,
+    id: "b-bahnmi", category: "smash", name: "Bahn Mi", ...est(10.9), image: imgBahnMi,
     desc: "Un sandwich vietnamien en smash burger : porc caramélisé, carotte, concombre, coriandre, sauce épicée",
     options: optionsBurger(),
   },
 
   /* --- Chicken Burger --- */
   {
-    id: "c-chicn", category: "chicken", name: "Chic'n", price: 8.5, emoji: "🐔",
+    id: "c-chicn", category: "chicken", name: "Chic'n", price: 8.5,
     desc: "Bun's potato, filet de poulet pané, cheddar américain, salade, tomate, mayonnaise américaine",
     options: optionsChicken(),
   },
   {
-    id: "c-avocado", category: "chicken", name: "L'Avocado", price: 9.5, emoji: "🥑", image: imgAvocado,
+    id: "c-avocado", category: "chicken", name: "L'Avocado", price: 9.5, image: imgAvocado,
     desc: "Bun's potato, filet de poulet pané, cheddar américain, avocat, tomate, sauce basilic",
     options: optionsChicken(),
   },
   {
-    id: "c-smoky", category: "chicken", name: "Smoky chic'n", price: 9.5, emoji: "🔥", image: imgSmokyChicn,
+    id: "c-smoky", category: "chicken", name: "Smoky chic'n", price: 9.5, image: imgSmokyChicn,
     desc: "Bun's potato, filet de poulet pané, cheddar américain, bacon de bœuf, oignon caramélisé, sauce barbecue",
     options: optionsChicken(),
   },
   {
-    id: "c-pilipli", category: "chicken", name: "Pili pli", price: 9.5, emoji: "🌶️",
+    id: "c-pilipli", category: "chicken", name: "Pili pli", price: 9.5,
     desc: "Bun's potato, filet de poulet pané, cheddar, jalapeños, tomates, sauce épicée",
     badge: "Épicé", options: optionsChicken(),
   },
   {
-    id: "c-flamin", category: "chicken", name: "Flamin Chic'N", ...est(10.9), emoji: "🐔", image: imgFlaminChicn,
+    id: "c-flamin", category: "chicken", name: "Flamin Chic'N", ...est(10.9), image: imgFlaminChicn,
     desc: "Bun's potato, filet de poulet pané, chips Cheetos flamin' hot, cheddar fondu, sauce épicée",
     badge: "Épicé", options: optionsChicken(),
   },
 
   /* --- Phily's (cheesesteak — différent du burger Phily) --- */
   {
-    id: "p-original", category: "phillys", name: "The Original Phily's", ...est(10.9), emoji: "🥖", image: imgPhilyOriginal,
+    id: "p-original", category: "phillys", name: "The Original Phily's", ...est(10.9), image: imgPhilyOriginal,
     desc: "Bœuf effiloché, cheddar fondu, oignon caramélisé, salade, sauce originale — la vraie recette philly",
     options: optionsBurger(),
   },
   {
-    id: "p-truffle", category: "phillys", name: "The Truffle Phily's", ...est(12.9), emoji: "🥖", image: imgPhilyTruffle,
+    id: "p-truffle", category: "phillys", name: "The Truffle Phily's", ...est(12.9), image: imgPhilyTruffle,
     desc: "Bœuf effiloché, champignons, cheddar fondu, roquette, sauce à la truffe",
     badge: "Premium", options: optionsBurger(),
   },
   {
-    id: "p-boursin", category: "phillys", name: "Phily's Boursin", ...est(9.9), emoji: "🥖", image: imgPhilyBoursin,
+    id: "p-boursin", category: "phillys", name: "Phily's Boursin", ...est(9.9), image: imgPhilyBoursin,
     desc: "Poulet mariné grillé, cheddar fondu, sauce boursin maison",
     options: optionsChicken(),
   },
   {
-    id: "p-crispychicn", category: "phillys", name: "Phily's Crispy Chic'N", ...est(9.9), emoji: "🥖", image: imgPhilyCrispyChicn,
+    id: "p-crispychicn", category: "phillys", name: "Phily's Crispy Chic'N", ...est(9.9), image: imgPhilyCrispyChicn,
     desc: "Filet de poulet croustillant, sauce maison, oignon frais, salade",
     options: optionsChicken(),
   },
 
   /* --- Nos Trays (formule plateau : frites + boisson incluses) --- */
   {
-    id: "t-chicn", category: "trays", name: "Tray Chic'N", ...est(14.9), emoji: "🍱", image: imgTrayChicn,
+    id: "t-chicn", category: "trays", name: "Tray Chic'N", ...est(14.9), image: imgTrayChicn,
     desc: "Poulet pané avec une sauce fait maison au choix, des frites et une boisson",
     options: optionsSauceOnly(),
   },
   {
-    id: "t-welldone", category: "trays", name: "Tray Well Done", ...est(15.9), emoji: "🍱", image: imgTrayWellDone,
+    id: "t-welldone", category: "trays", name: "Tray Well Done", ...est(15.9), image: imgTrayWellDone,
     desc: "Tenders, cheddar fondu, bacon de bœuf, frites et une boisson",
     options: optionsSauceOnly(),
   },
 
   /* --- Hot Dog --- */
   {
-    id: "h-ny", category: "hotdog", name: "New-yorkais", price: 5.9, emoji: "🌭", image: imgHotDog,
+    id: "h-ny", category: "hotdog", name: "New-yorkais", price: 5.9, image: imgHotDog,
     desc: "Bun's potato hot dog, saucisse de bœuf, relish pickles, crispy oignon, ketchup, moutarde américaine",
     options: optionsHotdog(),
   },
   {
-    id: "h-spicy", category: "hotdog", name: "Spicy", price: 6.5, emoji: "🌶️",
+    id: "h-spicy", category: "hotdog", name: "Spicy", price: 6.5,
     desc: "Bun's potato hot dog, saucisse de bœuf, cheddar fondu, relish pickles, crispy oignon, jalapeños, sauce originale",
     options: optionsHotdog(),
   },
   {
-    id: "h-welldone", category: "hotdog", name: "Well Done", price: 6.9, emoji: "🌭",
+    id: "h-welldone", category: "hotdog", name: "Well Done", price: 6.9,
     desc: "Bun's potato hotdog, saucisse de bœuf, bacon de bœuf, relish pickles, oignon caramélisé, cheddar fondu, sauce originale",
     options: optionsHotdog(),
   },
 
   /* --- Salade --- */
   {
-    id: "sal-complete", category: "salade", name: "Salade Well Done", ...est(11.9), emoji: "🥗", image: imgSalade,
+    id: "sal-complete", category: "salade", name: "Salade Well Done", ...est(11.9), image: imgSalade,
     desc: "Tenders de poulet croustillant, bœuf pastrami, avocat, tomates cerises, jeunes pousses, vinaigrette maison",
   },
 
   /* --- Nos frites --- */
-  { id: "f-nature", category: "frites", name: "Frites", price: 3, emoji: "🍟", options: optionsSauceOnly() },
-  { id: "f-cheddar", category: "frites", name: "Frites cheddar", price: 4, emoji: "🧀", options: optionsSauceOnly() },
-  { id: "f-jalapenos", category: "frites", name: "Frites cheddar jalapeños", price: 4.5, emoji: "🌶️", options: optionsSauceOnly() },
-  { id: "f-bacon", category: "frites", name: "Frites cheddar bacon", price: 5, emoji: "🥓", image: imgFritesBacon, options: optionsSauceOnly() },
+  { id: "f-nature", category: "frites", name: "Frites", price: 3, options: optionsSauceOnly() },
+  { id: "f-cheddar", category: "frites", name: "Frites cheddar", price: 4, options: optionsSauceOnly() },
+  { id: "f-jalapenos", category: "frites", name: "Frites cheddar jalapeños", price: 4.5, options: optionsSauceOnly() },
+  { id: "f-bacon", category: "frites", name: "Frites cheddar bacon", price: 5, image: imgFritesBacon, options: optionsSauceOnly() },
 
   /* --- Add --- */
-  { id: "a-nuggets", category: "add", name: "Chicken Nuggets ×5", price: 4.5, emoji: "🍗", options: optionsSauceOnly() },
-  { id: "a-chili", category: "add", name: "Chili cheese nuggets ×6", price: 4.5, emoji: "🌶️", options: optionsSauceOnly() },
-  { id: "a-mozza", category: "add", name: "Mozza sticks ×4", price: 4.5, emoji: "🧀", options: optionsSauceOnly() },
-  { id: "a-tenders", category: "add", name: "Tenders ×3", price: 4.5, emoji: "🍗", options: optionsSauceOnly() },
-  { id: "a-chevre", category: "add", name: "Sticks chèvre miel ×4", price: 4.5, emoji: "🍯", options: optionsSauceOnly() },
-  { id: "a-onion", category: "add", name: "Oignon rings ×6", price: 4.5, emoji: "🧅", options: optionsSauceOnly() },
+  { id: "a-nuggets", category: "add", name: "Chicken Nuggets ×5", price: 4.5, options: optionsSauceOnly() },
+  { id: "a-chili", category: "add", name: "Chili cheese nuggets ×6", price: 4.5, options: optionsSauceOnly() },
+  { id: "a-mozza", category: "add", name: "Mozza sticks ×4", price: 4.5, options: optionsSauceOnly() },
+  { id: "a-tenders", category: "add", name: "Tenders ×3", price: 4.5, options: optionsSauceOnly() },
+  { id: "a-chevre", category: "add", name: "Sticks chèvre miel ×4", price: 4.5, options: optionsSauceOnly() },
+  { id: "a-onion", category: "add", name: "Oignon rings ×6", price: 4.5, options: optionsSauceOnly() },
   {
-    id: "a-chicnpop", category: "add", name: "Chic'n Pop", ...est(6.9), emoji: "🍗", image: imgChicnPop,
+    id: "a-chicnpop", category: "add", name: "Chic'n Pop", ...est(6.9), image: imgChicnPop,
     desc: "Poulet pop-corn façon coréenne, sauce sucrée-épicée, sésame", options: optionsSauceOnly(),
   },
 
   /* --- Desserts --- */
-  { id: "d-mousse", category: "desserts", name: "Mousse chocolat", price: 3.9, emoji: "🍫" },
-  { id: "d-cookie", category: "desserts", name: "Cookie façon brownie", price: 3.5, emoji: "🍪" },
-  { id: "d-cheesecake", category: "desserts", name: "Cheesecake framboise", price: 4.5, emoji: "🍰" },
+  { id: "d-mousse", category: "desserts", name: "Mousse chocolat", price: 3.9 },
+  { id: "d-cookie", category: "desserts", name: "Cookie façon brownie", price: 3.5 },
+  { id: "d-cheesecake", category: "desserts", name: "Cheesecake framboise", price: 4.5 },
   {
-    id: "d-brioche", category: "desserts", name: "French Toast", price: 3.5, emoji: "🍞", image: imgFrenchToast,
+    id: "d-brioche", category: "desserts", name: "French Toast", price: 3.5, image: imgFrenchToast,
     desc: "Pain perdu maison, sauce caramel beurre salé et chocolat, chantilly",
   },
   {
-    id: "d-cookiegourmet", category: "desserts", name: "Cookie Gourmet", ...est(6.5), emoji: "🍪", image: imgCookieGourmet,
+    id: "d-cookiegourmet", category: "desserts", name: "Cookie Gourmet", ...est(6.5), image: imgCookieGourmet,
     desc: "Cookie fondant et croustillant, glace vanille, éclats de biscuit, sauce caramel",
   },
   {
-    id: "d-tiramisu", category: "desserts", name: "Tiramisu", ...est(4.9), emoji: "🍮", image: imgTiramisu,
+    id: "d-tiramisu", category: "desserts", name: "Tiramisu", ...est(4.9), image: imgTiramisu,
     desc: "Tiramisu maison en pot, biscuit imbibé, mascarpone",
   },
   {
-    id: "d-cupdubai", category: "desserts", name: "Cup Dubai", ...est(6.9), emoji: "🍫", image: imgCupDubai,
+    id: "d-cupdubai", category: "desserts", name: "Cup Dubai", ...est(6.9), image: imgCupDubai,
     desc: "Cup façon chocolat Dubaï : pistache, kadaïf croustillant, fraises fraîches",
     badge: "Tendance",
   },
 
   /* --- Boissons --- */
   {
-    id: "s-soft", category: "boissons", name: "Soft", price: 2, emoji: "🥤",
+    id: "s-soft", category: "boissons", name: "Soft", price: 2,
     desc: "33 cl",
     options: [{
       key: "parfum", label: "Au choix", type: "single", required: true,
@@ -311,7 +311,7 @@ export const WELL_DONE_MENU = [
     }],
   },
   {
-    id: "s-premium", category: "boissons", name: "Prémium", price: 2.5, emoji: "🥃",
+    id: "s-premium", category: "boissons", name: "Prémium", price: 2.5,
     desc: "Bouteille en verre 25 cl",
     options: [{
       key: "parfum", label: "Au choix", type: "single", required: true,
@@ -322,7 +322,7 @@ export const WELL_DONE_MENU = [
     }],
   },
   {
-    id: "s-lemonaid", category: "boissons", name: "Lemon Aid", price: 2.9, emoji: "🍋",
+    id: "s-lemonaid", category: "boissons", name: "Lemon Aid", price: 2.9,
     desc: "Limonade bio",
     options: [{
       key: "parfum", label: "Parfum", type: "single", required: true,
@@ -408,9 +408,9 @@ export const linkScanToOrder = (scanId, orderId) => {
   }
 };
 
-export const logActivity = (emoji, text, type = "order") => {
+export const logActivity = (icon, text, type = "order") => {
   const l = readLS(KEY_ACTIVITY, []);
-  l.push({ id: uid(), ts: Date.now(), at: nowTime(), emoji, text, type });
+  l.push({ id: uid(), ts: Date.now(), at: nowTime(), icon, text, type });
   writeLS(KEY_ACTIVITY, l.slice(-120));
 };
 export const readActivity = () => readLS(KEY_ACTIVITY, []).slice().reverse();
@@ -448,16 +448,16 @@ export const upsertCustomer = (order) => {
 export const STATUSES = ["PENDING", "PREPARING", "READY", "DONE"];
 
 export const STATUS_META = {
-  PENDING: { label: "Reçue", emoji: "🆕", color: "#FF9F0A" },
-  PREPARING: { label: "En préparation", emoji: "👨‍🍳", color: "#0A84FF" },
-  READY: { label: "Prête", emoji: "✅", color: "#30D158" },
-  DONE: { label: "Terminée", emoji: "🏁", color: "#AEAEB2" },
+  PENDING: { label: "Reçue", icon: "bell", color: "#FF9F0A" },
+  PREPARING: { label: "En préparation", icon: "kitchen", color: "#0A84FF" },
+  READY: { label: "Prête", icon: "check", color: "#30D158" },
+  DONE: { label: "Terminée", icon: "flag", color: "#AEAEB2" },
 };
 
 export const MODE_META = {
-  sur_place: { label: "Sur place", emoji: "🍽️", eta: 15 },
-  emporter: { label: "À emporter", emoji: "🥡", eta: 15 },
-  livraison: { label: "Livraison", emoji: "🛵", eta: 35 },
+  sur_place: { label: "Sur place", eta: 15 },
+  emporter: { label: "À emporter", eta: 15 },
+  livraison: { label: "Livraison", eta: 35 },
 };
 
 let refCounter = 0;
@@ -482,7 +482,7 @@ export const placeOrder = (order) => {
   writeOrders(list);
   upsertCustomer(full);
   logActivity(
-    MODE_META[order.mode].emoji,
+    MODE_ICON[order.mode],
     `${full.ref} · ${MODE_META[order.mode].label}${order.table ? ` · table ${order.table}` : ""} — ${full.items.length} article(s)`,
     "order"
   );
@@ -497,7 +497,7 @@ export const advanceOrder = (id, to) => {
   if (to === "READY") o.ready_at = Date.now();
   if (to === "DONE") o.done_at = Date.now();
   writeOrders(list);
-  logActivity(STATUS_META[to].emoji, `${o.ref} — ${STATUS_META[to].label}`, "order");
+  logActivity(STATUS_META[to].icon, `${o.ref} — ${STATUS_META[to].label}`, "order");
   return o;
 };
 
@@ -519,7 +519,8 @@ export const seedOrders = () => {
     key: uid(),
     item_id: item.id,
     name: item.name,
-    emoji: item.emoji,
+    category: item.category,
+    image: item.image,
     qty,
     unit: item.price + extra,
     total: (item.price + extra) * qty,
@@ -585,6 +586,6 @@ export const ensureSeed = () => {
   const existing = readOrders();
   if (existing.length === 0) {
     writeOrders(seedOrders());
-    logActivity("🍔", "Service ouvert — 2 commandes de démonstration chargées", "system");
+    logActivity("burger", "Service ouvert — 2 commandes de démonstration chargées", "system");
   }
 };

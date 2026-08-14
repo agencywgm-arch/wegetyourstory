@@ -1,20 +1,24 @@
 import React, { useEffect } from "react";
 import { W, FONT, display, label, glass, brandPattern } from "./theme.js";
+import { CATEGORIES } from "./data.js";
+import { Icon } from "./icons.jsx";
 
 /* ==========================================================================
    Primitives de l'interface Well Done — surfaces sombres, verre, or.
    ========================================================================== */
 
-/* Vignette d'article : photo si l'enseigne en a fourni une, emoji sinon —
-   jamais les deux, pour ne pas mélanger deux langages visuels sur la carte. */
+/* Vignette d'article : photo si l'enseigne en a fourni une, icône de la
+   catégorie sinon — jamais d'emoji, pour rester dans une seule grammaire
+   visuelle sur la carte. */
 export function Dish({ item, size = 46, radius = 14, fontSize = 24 }) {
+  const catIcon = CATEGORIES.find((c) => c.id === item.category)?.icon;
   return (
     <span
       style={{
         width: size, height: size, borderRadius: radius, flexShrink: 0,
         background: "rgba(198,154,99,.11)", border: `1px solid ${W.line}`,
         display: "inline-flex", alignItems: "center", justifyContent: "center",
-        overflow: "hidden", fontSize,
+        overflow: "hidden", color: W.gold,
       }}
     >
       {item.image ? (
@@ -25,7 +29,7 @@ export function Dish({ item, size = 46, radius = 14, fontSize = 24 }) {
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
       ) : (
-        item.emoji
+        <Icon name={catIcon} size={fontSize} stroke={1.5} />
       )}
     </span>
   );

@@ -228,7 +228,7 @@ function MenuView({ menu, mode, table, cart, openItem, goCart, back }) {
                 color: on ? "#2A1B08" : W.textSoft,
               }}
             >
-              {c.emoji} {c.label}
+              <Icon name={c.icon} size={14} /> {c.label}
             </button>
           );
         })}
@@ -246,7 +246,7 @@ function MenuView({ menu, mode, table, cart, openItem, goCart, back }) {
               style={{ scrollMarginTop: "calc(var(--wd-top, 0px) + 124px)", paddingTop: 26 }}
             >
               <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4 }}>
-                <h2 style={{ ...display(23), color: W.text, margin: 0 }}>{c.emoji} {c.label}</h2>
+                <h2 style={{ ...display(23), color: W.text, margin: 0, display: "flex", alignItems: "center", gap: 10 }}><Icon name={c.icon} size={20} color={W.gold} /> {c.label}</h2>
               </div>
               {c.note && (
                 <div style={{ ...FONT, fontSize: 12.5, fontWeight: 800, color: W.gold, marginBottom: 14 }} translate="no">
@@ -312,7 +312,7 @@ function MenuView({ menu, mode, table, cart, openItem, goCart, back }) {
 
         <div style={{ ...FONT, fontSize: 12, color: W.textDim, textAlign: "center", marginTop: 34, lineHeight: 1.7 }}>
           Sauces incluses : ketchup, moutarde, mayonnaise, barbecue.
-          <br />👻 {BRAND.snapchat} · 📸 {BRAND.instagram}
+          <br />Snapchat {BRAND.snapchat} · Instagram {BRAND.instagram}
         </div>
       </div>
 
@@ -374,7 +374,7 @@ function Composer({ item, onClose, onAdd }) {
             style={{ flex: 1 }}
             onClick={() =>
               onAdd({
-                key: uid(), item_id: item.id, name: item.name, emoji: item.emoji, image: item.image, qty, unit,
+                key: uid(), item_id: item.id, name: item.name, category: item.category, image: item.image, qty, unit,
                 total: Math.round(unit * qty * 100) / 100,
                 opts: optionLabels(item, sel), note: note.trim(),
               })
@@ -460,7 +460,7 @@ function CartView({ cart, setCart, mode, table, back, goCheckout }) {
                       {l.opts.length > 0 && (
                         <div style={{ ...FONT, fontSize: 12.5, color: W.textSoft, marginTop: 4, lineHeight: 1.5 }}>{l.opts.join(" · ")}</div>
                       )}
-                      {l.note && <div style={{ ...FONT, fontSize: 12.5, color: W.orange, marginTop: 4, fontWeight: 700 }}>✏️ {l.note}</div>}
+                      {l.note && <div style={{ ...FONT, fontSize: 12.5, color: W.orange, marginTop: 4, fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}><Icon name="edit" size={12} /> {l.note}</div>}
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12, gap: 10 }}>
                         <Stepper value={l.qty} onChange={(q) => setQty(l.key, q)} min={0} />
                         <b style={{ ...display(17), ...goldText }} translate="no">{fmtEuro(l.total)}</b>
@@ -596,8 +596,8 @@ function CheckoutView({ cart, mode, table, back, onDone, toast }) {
         <SectionLabel>Paiement</SectionLabel>
         <div style={{ display: "flex", gap: 10 }}>
           {[
-            { id: "carte", t: "Carte", s: "Apple Pay / Google Pay", e: "💳" },
-            { id: "especes", t: "Espèces", s: mode === "livraison" ? "À la livraison" : "Au comptoir", e: "💶" },
+            { id: "carte", t: "Carte", s: "Apple Pay / Google Pay", icon: "card" },
+            { id: "especes", t: "Espèces", s: mode === "livraison" ? "À la livraison" : "Au comptoir", icon: "cash" },
           ].map((p) => (
             <Panel
               key={p.id}
@@ -609,7 +609,7 @@ function CheckoutView({ cart, mode, table, back, onDone, toast }) {
                 background: pay === p.id ? "rgba(76,164,53,.11)" : undefined,
               }}
             >
-              <div style={{ fontSize: 19 }}>{p.e}</div>
+              <div style={{ display: "flex", justifyContent: "center", color: pay === p.id ? W.greenLt : W.textSoft }}><Icon name={p.icon} size={20} /></div>
               <div style={{ ...display(15), color: W.text, marginTop: 7 }}>{p.t}</div>
               <div style={{ ...FONT, fontSize: 11, color: W.textDim, marginTop: 3 }}>{p.s}</div>
             </Panel>
@@ -747,14 +747,14 @@ function TrackView({ orderId, onNew }) {
                 <span style={{ ...FONT, fontSize: 14, fontWeight: 800, color: W.text }} translate="no">{fmtEuro(l.total)}</span>
               </div>
               {l.opts?.length > 0 && <div style={{ ...FONT, fontSize: 12, color: W.textDim, marginTop: 3 }}>{l.opts.join(" · ")}</div>}
-              {l.note && <div style={{ ...FONT, fontSize: 12, color: W.orange, marginTop: 3 }}>✏️ {l.note}</div>}
+              {l.note && <div style={{ ...FONT, fontSize: 12, color: W.orange, marginTop: 3, display: "flex", alignItems: "center", gap: 5 }}><Icon name="edit" size={11} /> {l.note}</div>}
             </div>
           ))}
           <div style={{ marginTop: 12 }}>
             {order.discount > 0 && <Line k={`Promo ${order.promo_code}`} v={`− ${fmtEuro(order.discount)}`} tone={W.greenLt} />}
             <Line k="Total" v={fmtEuro(order.total)} big />
             <div style={{ ...FONT, fontSize: 12, color: W.textDim, marginTop: 8 }}>
-              {order.payment_method === "carte" ? "💳 Payé par carte" : "💶 À régler en espèces"}
+              {order.payment_method === "carte" ? "Payé par carte" : "À régler en espèces"}
               {order.zone ? ` · ${order.zone}` : ""}
             </div>
           </div>

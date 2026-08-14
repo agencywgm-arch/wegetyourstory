@@ -283,7 +283,7 @@ function OrderRow({ o, act, sync }) {
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 16px", borderBottom: `1px solid ${W.lineSoft}`, flexWrap: "wrap" }}>
         <span style={{ ...display(18), color: W.text }} translate="no">{o.ref}</span>
         <Chip tone={o.status === "PENDING" ? "orange" : o.status === "READY" ? "green" : o.status === "DONE" ? "dim" : "info"}>
-          {meta.emoji} {meta.label}
+          <Icon name={meta.icon} size={12} /> {meta.label}
         </Chip>
         <Chip tone="dim">
           <Icon name={MODE_ICON[o.mode]} size={13} /> {o.table ? `Table ${o.table}` : MODE_META[o.mode].label}
@@ -301,7 +301,7 @@ function OrderRow({ o, act, sync }) {
               <span style={{ ...FONT, display: "block", fontSize: 12.5, color: W.textDim, marginLeft: 22 }}>{l.opts.join(" · ")}</span>
             )}
             {l.note && (
-              <span style={{ ...FONT, display: "block", fontSize: 12.5, color: W.orange, marginLeft: 22, fontWeight: 700 }}>✏️ {l.note}</span>
+              <span style={{ ...FONT, display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: W.orange, marginLeft: 22, fontWeight: 700 }}><Icon name="edit" size={11} /> {l.note}</span>
             )}
           </div>
         ))}
@@ -318,13 +318,13 @@ function OrderRow({ o, act, sync }) {
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderTop: `1px solid ${W.lineSoft}`, background: "rgba(0,0,0,.16)", flexWrap: "wrap" }}>
         <span style={{ ...display(18), ...goldText }} translate="no">{fmtEuro(o.total)}</span>
         <span style={{ ...FONT, fontSize: 12, color: W.textDim }}>
-          {o.payment_method === "carte" ? "💳 payé" : "💶 espèces"}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name={o.payment_method === "carte" ? "card" : "cash"} size={12} /> {o.payment_method === "carte" ? "payé" : "espèces"}</span>
         </span>
         <span style={{ marginLeft: "auto", display: "flex", gap: 7, alignItems: "center", flexWrap: "wrap" }}>
           {o.status !== "DONE" && (
             <>
               <Btn size="xs" variant="ghost" onClick={() => { shiftEta(o.id, -5); sync(); }}>−5</Btn>
-              <Chip tone={left <= 3 ? "danger" : "dim"}><span translate="no">⏱️ {left}′</span></Chip>
+              <Chip tone={left <= 3 ? "danger" : "dim"}><Icon name="clock" size={11} /> <span translate="no">{left}′</span></Chip>
               <Btn size="xs" variant="ghost" onClick={() => { shiftEta(o.id, 5); sync(); }}>+5</Btn>
             </>
           )}
@@ -472,7 +472,7 @@ function MenuAdmin({ menu, setMenu, toast }) {
                 color: on ? "#2A1B08" : W.textSoft,
               }}
             >
-              {c.emoji} {c.label}
+              <Icon name={c.icon} size={13} /> {c.label}
             </button>
           );
         })}
@@ -747,7 +747,7 @@ function Activity() {
         ) : (
           items.map((a, i) => (
             <div key={a.id} style={{ display: "flex", gap: 13, alignItems: "center", padding: "13px 18px", borderBottom: i < items.length - 1 ? `1px solid ${W.lineSoft}` : "none" }}>
-              <span style={{ fontSize: 17 }}>{a.emoji}</span>
+              <Icon name={a.icon} size={16} color={W.gold} />
               <span style={{ ...FONT, flex: 1, fontSize: 13.5, color: W.text }}>{a.text}</span>
               <span style={{ ...FONT, fontSize: 12, color: W.textDim, flexShrink: 0 }} translate="no">{timeAgo(a.ts)}</span>
             </div>
