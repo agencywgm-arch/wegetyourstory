@@ -42,6 +42,7 @@ function DemoBar({ screen, go }) {
     >
       <button
         onClick={() => go("landing")}
+        aria-label="Accueil"
         style={{
           ...FONT, display: "inline-flex", alignItems: "center", gap: 7, flexShrink: 0,
           background: "transparent", border: "none", cursor: "pointer", color: W.textDim,
@@ -49,7 +50,6 @@ function DemoBar({ screen, go }) {
         }}
       >
         <BurgerGlyph size={15} color={W.gold} stroke={8} />
-        <span style={{ ...label(9.5) }}>Démo</span>
       </button>
 
       <span style={{ width: 1, height: 20, background: W.lineSoft, flexShrink: 0 }} />
@@ -127,12 +127,8 @@ function Hero({ go }) {
         </p>
 
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginTop: 34 }}>
-          <Btn size="lg" onClick={() => go("client")}><Icon name="phone" size={17} /> Lancer la démo client</Btn>
+          <Btn size="lg" onClick={() => go("client")}><Icon name="phone" size={17} /> Commander maintenant</Btn>
           <Btn size="lg" variant="outline" onClick={() => go("gestion")}><Icon name="desktop" size={17} /> Tableau de bord</Btn>
-        </div>
-
-        <div style={{ ...FONT, fontSize: 12.5, color: W.textDim, marginTop: 18 }}>
-          Démonstration hors ligne — tout l'état vit dans ce navigateur.
         </div>
       </div>
     </section>
