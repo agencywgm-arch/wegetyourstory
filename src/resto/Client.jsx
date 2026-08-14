@@ -164,6 +164,7 @@ function MenuView({ menu, mode, table, cart, openItem, goCart, back }) {
 
   const [cat, setCat] = useState(photoCategories[0]?.id);
   const refs = useRef({});
+  const carteRef = useRef(null);
   const count = cart.reduce((s, l) => s + l.qty, 0);
   const total = cart.reduce((s, l) => s + l.total, 0);
 
@@ -184,7 +185,52 @@ function MenuView({ menu, mode, table, cart, openItem, goCart, back }) {
     <Screen>
       <Bar onBack={back} mode={mode} table={table} />
 
-      <div style={{ position: "relative", overflow: "hidden", padding: "40px 20px 28px" }}>
+      {/* Véritable accueil de la vue client : un premier écran fort, dans les
+          codes de la marque, avant que la page ne redescende vers la carte. */}
+      <section style={{ position: "relative", overflow: "hidden", background: "#0F1B12", padding: "58px 20px 46px" }}>
+        <div
+          aria-hidden
+          style={{
+            position: "absolute", inset: 0,
+            backgroundImage: brandPattern(0.22),
+            backgroundSize: "180px 180px",
+            maskImage: "radial-gradient(120% 90% at 50% 0%, #000, transparent 75%)",
+            WebkitMaskImage: "radial-gradient(120% 90% at 50% 0%, #000, transparent 75%)",
+          }}
+        />
+        <div style={{ position: "relative", maxWidth: 620, margin: "0 auto" }}>
+          <div style={{ ...label(11), color: W.goldLt }}>Well Done</div>
+          <h1 style={{ ...display(38), color: "#F7F3EA", marginTop: 12 }}>
+            SMASH BURGER,<br />FAIT MINUTE.
+          </h1>
+          <p style={{ ...FONT, fontSize: 14.5, color: "rgba(247,243,234,.68)", marginTop: 14, lineHeight: 1.6, maxWidth: 420 }}>
+            Smash burgers · Sauces maison · Frites cheddar bacon
+          </p>
+          <div style={{ display: "flex", gap: 12, marginTop: 28, flexWrap: "wrap" }}>
+            <Btn size="lg" onClick={() => carteRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}>
+              Voir le menu
+            </Btn>
+            {back && (
+              <Btn
+                size="lg"
+                variant="outline"
+                onClick={back}
+                style={{ background: "rgba(247,243,234,.06)", borderColor: "rgba(247,243,234,.3)", color: "#F7F3EA" }}
+              >
+                Changer de mode
+              </Btn>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <div
+        ref={carteRef}
+        style={{
+          position: "relative", overflow: "hidden", padding: "40px 20px 28px",
+          scrollMarginTop: "calc(var(--wd-top, 0px) + 61px)",
+        }}
+      >
         <div
           aria-hidden
           style={{
