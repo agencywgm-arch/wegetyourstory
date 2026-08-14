@@ -48,6 +48,9 @@ export function Logo({ size = 44, tone = "light", inline = false }) {
     letterSpacing: size * 0.14,
     color: wellColor,
     lineHeight: 1,
+    height: glyph,
+    display: "flex",
+    alignItems: "center",
     // La lettre-spacing ajoute un blanc après le dernier caractère : on le reprend.
     marginRight: -size * 0.14,
   };
@@ -58,6 +61,7 @@ export function Logo({ size = 44, tone = "light", inline = false }) {
     letterSpacing: size * 0.03,
     color: doneColor,
     lineHeight: 1,
+    height: glyph,
     display: "flex",
     alignItems: "center",
     gap: size * 0.04,
