@@ -91,12 +91,12 @@ function Ticket({ o, onAdvance, onEta, col }) {
               {l.note && (
                 <span
                   style={{
-                    ...FONT, display: "inline-block", marginTop: 6, fontSize: 13, fontWeight: 800,
+                    ...FONT, display: "inline-flex", alignItems: "center", gap: 5, marginTop: 6, fontSize: 13, fontWeight: 800,
                     color: W.orange, background: W.orange + "1C", border: `1px solid ${W.orange}45`,
                     borderRadius: 8, padding: "3px 9px",
                   }}
                 >
-                  ✏️ {l.note}
+                  <Icon name="edit" size={12} /> {l.note}
                 </span>
               )}
             </span>

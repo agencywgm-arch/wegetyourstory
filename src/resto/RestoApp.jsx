@@ -228,7 +228,7 @@ function MenuPreview() {
       </div>
 
       <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 24 }}>
-        {CATEGORIES.map((c) => <Chip key={c.id} tone="dim">{c.emoji} {c.label}</Chip>)}
+        {CATEGORIES.map((c) => <Chip key={c.id} tone="dim"><Icon name={c.icon} size={12} /> {c.label}</Chip>)}
       </div>
     </section>
   );
@@ -275,7 +275,7 @@ function Footer({ go }) {
           <Btn size="lg" variant="outline" onClick={() => go("cuisine")}>Voir la cuisine</Btn>
         </div>
         <div style={{ ...FONT, fontSize: 12.5, color: W.textDim, marginTop: 30 }}>
-          👻 {BRAND.snapchat} · 📸 {BRAND.instagram}
+          Snapchat {BRAND.snapchat} · Instagram {BRAND.instagram}
         </div>
       </Panel>
     </footer>
