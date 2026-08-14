@@ -51,7 +51,7 @@ function Ticket({ o, onAdvance, onEta, col }) {
         }}
       >
         <span style={{ ...display(21), color: W.text }} translate="no">{o.ref}</span>
-        <Chip tone={o.mode === "livraison" ? "gold" : "dim"} style={{ fontSize: 11.5 }}>
+        <Chip tone="dim" style={{ fontSize: 11.5 }}>
           <Icon name={MODE_ICON[o.mode]} size={13} /> {o.table ? `Table ${o.table}` : mode.label}
         </Chip>
         <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -104,12 +104,11 @@ function Ticket({ o, onAdvance, onEta, col }) {
         ))}
       </div>
 
-      {/* Pied : client / adresse et action unique */}
+      {/* Pied : client et action unique */}
       <div style={{ padding: "0 16px 14px" }}>
-        {(o.customer?.name || o.customer?.address) && (
+        {o.customer?.name && (
           <div style={{ ...FONT, fontSize: 12.5, color: W.textDim, marginBottom: 12, lineHeight: 1.5 }}>
             {o.customer.name}
-            {o.customer.address ? ` · ${o.customer.address}, ${o.customer.city}` : ""}
           </div>
         )}
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>

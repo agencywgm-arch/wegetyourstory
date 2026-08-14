@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { W, FONT, display, label, glass, goldText } from "./theme.js";
-import { Screen, Panel, Btn, Chip, Field, Select, Sheet, Stepper, SectionLabel, Empty, Dish } from "./ui.jsx";
+import { Screen, Panel, Btn, Chip, Field, Sheet, Stepper, SectionLabel, Empty, Dish } from "./ui.jsx";
 import { Logo, Tagline, BurgerGlyph } from "./Logo.jsx";
 import {
-  BRAND, CATEGORIES, MODE_META, STATUS_META, DELIVERY_ZONES,
-  zoneForCity, applyPromo, readMenu, placeOrder, readCart, writeCart,
+  BRAND, CATEGORIES, MODE_META, STATUS_META,
+  applyPromo, readMenu, placeOrder, readCart, writeCart,
   linkScanToOrder, useOrders,
 } from "./data.js";
 import { fmtEuro, uid, useTick, useToast, playBeep, readLS, writeLS } from "../shared/ui.jsx";
@@ -93,7 +93,6 @@ function ModeChoice({ table, onPick }) {
   const modes = [
     { id: "sur_place", title: "Sur place", sub: table ? `Service à la table ${table}` : "Scannez le QR d'une table", icon: "dinein", off: !table },
     { id: "emporter", title: "À emporter", sub: "Prêt en ~15 min au comptoir", icon: "takeaway" },
-    { id: "livraison", title: "Livraison", sub: "Minimum de commande selon la zone", icon: "delivery" },
   ];
 
   return (
@@ -147,27 +146,6 @@ function ModeChoice({ table, onPick }) {
             </Panel>
           ))}
         </div>
-
-        <Panel pad={18} style={{ marginTop: 22 }}>
-          <div style={{ ...label(10.5), color: W.gold, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}><Icon name="delivery" size={15} /> Livraison — minimum par zone</div>
-          {DELIVERY_ZONES.map((z, i) => (
-            <div
-              key={z.id}
-              style={{
-                display: "flex", justifyContent: "space-between", gap: 12, padding: "9px 0",
-                borderBottom: i < DELIVERY_ZONES.length - 1 ? `1px solid ${W.lineSoft}` : "none",
-              }}
-            >
-              <span style={{ ...FONT, fontSize: 12.5, color: W.textSoft, lineHeight: 1.45, flex: 1 }}>
-                <b style={{ color: W.text }}>{z.label}</b>
-                {z.cities.length ? ` — ${z.cities.join(", ")}` : " — toute autre commune"}
-              </span>
-              <b style={{ ...FONT, fontSize: 13, color: W.gold, whiteSpace: "nowrap" }} translate="no">
-                {fmtEuro(z.min)}
-              </b>
-            </div>
-          ))}
-        </Panel>
       </div>
     </Screen>
   );
@@ -499,7 +477,7 @@ function Line({ k, v, tone, big }) {
 }
 
 function CheckoutView({ cart, mode, table, back, onDone, toast }) {
-  const [f, setF] = useState({ name: "", phone: "", email: "", address: "", city: DELIVERY_ZONES[0].cities[0] });
+  const [f, setF] = useState({ name: "", phone: "", email: "" });
   const [code, setCode] = useState("");
   const [promo, setPromo] = useState(null);
   const [pay, setPay] = useState("carte");
@@ -508,8 +486,6 @@ function CheckoutView({ cart, mode, table, back, onDone, toast }) {
   const subtotal = cart.reduce((s, l) => s + l.total, 0);
   const discount = promo?.discount || 0;
   const total = Math.max(0, Math.round((subtotal - discount) * 100) / 100);
-  const zone = mode === "livraison" ? zoneForCity(f.city) : null;
-  const below = zone ? subtotal < zone.min : false;
 
   const tryPromo = () => {
     const r = applyPromo(code, subtotal);
@@ -520,19 +496,15 @@ function CheckoutView({ cart, mode, table, back, onDone, toast }) {
 
   const submit = () => {
     if (!f.name.trim()) return toast.error("Votre nom est nécessaire pour l'appel en cuisine");
-    if (mode === "livraison" && !f.address.trim()) return toast.error("Adresse de livraison manquante");
-    if (mode === "livraison" && !f.phone.trim()) return toast.error("Téléphone nécessaire pour la livraison");
-    if (below) return toast.error(`Minimum ${fmtEuro(zone.min)} en ${zone.label}`);
     setBusy(true);
     // Paiement simulé : la démo ne contacte aucun service externe.
     setTimeout(() => {
       const order = placeOrder({
         mode, table: mode === "sur_place" ? table : null, items: cart,
         subtotal, discount, promo_code: promo?.promo.code || null, total,
-        payment_method: pay, paid: pay === "carte", zone: zone?.label || null,
+        payment_method: pay, paid: pay === "carte",
         customer: {
           name: f.name.trim(), phone: f.phone.trim(), email: f.email.trim(),
-          address: f.address.trim(), city: mode === "livraison" ? f.city : "",
         },
       });
       setBusy(false);
@@ -549,43 +521,10 @@ function CheckoutView({ cart, mode, table, back, onDone, toast }) {
         <Panel>
           <div style={{ display: "grid", gap: 14 }}>
             <Field label="Nom" value={f.name} onChange={(v) => setF({ ...f, name: v })} placeholder="Prénom ou nom" required />
-            <Field label="Téléphone" type="tel" value={f.phone} onChange={(v) => setF({ ...f, phone: v })} placeholder="06 12 34 56 78" required={mode === "livraison"} />
+            <Field label="Téléphone" type="tel" value={f.phone} onChange={(v) => setF({ ...f, phone: v })} placeholder="06 12 34 56 78" />
             <Field label="Email (reçu numérique)" type="email" value={f.email} onChange={(v) => setF({ ...f, email: v })} placeholder="vous@email.com" />
-            {mode === "livraison" && (
-              <>
-                <Field label="Adresse" value={f.address} onChange={(v) => setF({ ...f, address: v })} placeholder="12 rue des Lilas" required />
-                <Select label="Commune" value={f.city} onChange={(v) => setF({ ...f, city: v })}>
-                  {DELIVERY_ZONES.map((z) =>
-                    z.cities.length ? (
-                      <optgroup key={z.id} label={`${z.label} — min. ${z.min} €`}>
-                        {z.cities.map((c) => <option key={c} value={c}>{c}</option>)}
-                      </optgroup>
-                    ) : (
-                      <option key={z.id} value="Hors zone">Autre commune (hors zone — min. 50 €)</option>
-                    )
-                  )}
-                </Select>
-              </>
-            )}
           </div>
         </Panel>
-
-        {zone && (
-          <Panel
-            pad={15}
-            style={{
-              marginTop: 12,
-              borderColor: below ? "rgba(255,77,77,.45)" : "rgba(76,164,53,.4)",
-              background: below ? "rgba(255,77,77,.08)" : "rgba(76,164,53,.08)",
-            }}
-          >
-            <div style={{ ...FONT, fontSize: 13, fontWeight: 800, color: below ? W.danger : W.greenLt }} translate="no">
-              {below
-                ? `${zone.label} — il manque ${fmtEuro(zone.min - subtotal)} pour atteindre le minimum de ${fmtEuro(zone.min)}`
-                : `${zone.label} — minimum de ${fmtEuro(zone.min)} atteint ✓`}
-            </div>
-          </Panel>
-        )}
 
         <SectionLabel>Code promo</SectionLabel>
         <div style={{ display: "flex", gap: 8 }}>
@@ -597,7 +536,7 @@ function CheckoutView({ cart, mode, table, back, onDone, toast }) {
         <div style={{ display: "flex", gap: 10 }}>
           {[
             { id: "carte", t: "Carte", s: "Apple Pay / Google Pay", icon: "card" },
-            { id: "especes", t: "Espèces", s: mode === "livraison" ? "À la livraison" : "Au comptoir", icon: "cash" },
+            { id: "especes", t: "Espèces", s: "Au comptoir", icon: "cash" },
           ].map((p) => (
             <Panel
               key={p.id}
@@ -688,9 +627,7 @@ function TrackView({ orderId, onNew }) {
             <BurgerGlyph size={52} color={ready ? W.greenLt : W.gold} stroke={5} />
           </div>
           <div style={{ ...display(30), color: W.text }}>
-            {order.status === "READY"
-              ? order.mode === "livraison" ? "En route !" : "C'est prêt !"
-              : STATUS_META[order.status].label}
+            {order.status === "READY" ? "C'est prêt !" : STATUS_META[order.status].label}
           </div>
           <div style={{ ...FONT, fontSize: 14, color: W.textSoft, marginTop: 10 }}>
             Commande <b style={{ color: W.gold }} translate="no">{order.ref}</b>
@@ -755,7 +692,6 @@ function TrackView({ orderId, onNew }) {
             <Line k="Total" v={fmtEuro(order.total)} big />
             <div style={{ ...FONT, fontSize: 12, color: W.textDim, marginTop: 8 }}>
               {order.payment_method === "carte" ? "Payé par carte" : "À régler en espèces"}
-              {order.zone ? ` · ${order.zone}` : ""}
             </div>
           </div>
         </Panel>
