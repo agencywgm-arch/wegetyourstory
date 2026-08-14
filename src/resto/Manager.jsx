@@ -118,7 +118,7 @@ export default function Manager({ onExit, onKitchen, onClient }) {
             width: narrow ? "auto" : 244, flexShrink: 0,
             borderRight: narrow ? "none" : `1px solid ${W.line}`,
             borderBottom: narrow ? `1px solid ${W.line}` : "none",
-            background: "rgba(10,26,13,.6)", backdropFilter: "blur(20px)",
+            background: "rgba(255,255,255,.72)", backdropFilter: "blur(20px)",
             padding: narrow ? "12px 14px" : "22px 16px",
             position: "sticky", top: "var(--wd-top, 0px)", zIndex: 60,
             maxHeight: narrow ? "none" : "calc(100dvh - var(--wd-top, 0px))", overflowY: "auto",
@@ -239,7 +239,7 @@ function Overview({ orders, all, onKitchen, pending }) {
                   {b.n} · <b style={{ color: W.gold }}>{fmtEuro(b.ca)}</b>
                 </span>
               </div>
-              <div style={{ height: 6, borderRadius: 99, background: "rgba(255,255,255,.06)", overflow: "hidden" }}>
+              <div style={{ height: 6, borderRadius: 99, background: "rgba(22,36,26,.07)", overflow: "hidden" }}>
                 <div style={{ width: `${(b.ca / maxCa) * 100}%`, height: "100%", borderRadius: 99, background: `linear-gradient(90deg, ${W.greenLt}, ${W.green})` }} />
               </div>
             </div>
@@ -257,7 +257,7 @@ function Overview({ orders, all, onKitchen, pending }) {
                 </span>
                 <span style={{ ...FONT, fontSize: 13, fontWeight: 800, color: W.gold }} translate="no">{n}</span>
               </div>
-              <div style={{ height: 6, borderRadius: 99, background: "rgba(255,255,255,.06)", overflow: "hidden" }}>
+              <div style={{ height: 6, borderRadius: 99, background: "rgba(22,36,26,.07)", overflow: "hidden" }}>
                 <div style={{ width: `${(n / maxTop) * 100}%`, height: "100%", borderRadius: 99, background: `linear-gradient(90deg, ${W.goldLt}, ${W.gold})` }} />
               </div>
             </div>
@@ -315,7 +315,7 @@ function OrderRow({ o, act, sync }) {
         )}
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderTop: `1px solid ${W.lineSoft}`, background: "rgba(0,0,0,.16)", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderTop: `1px solid ${W.lineSoft}`, background: "rgba(22,36,26,.03)", flexWrap: "wrap" }}>
         <span style={{ ...display(18), ...goldText }} translate="no">{fmtEuro(o.total)}</span>
         <span style={{ ...FONT, fontSize: 12, color: W.textDim }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><Icon name={o.payment_method === "carte" ? "card" : "cash"} size={12} /> {o.payment_method === "carte" ? "payé" : "espèces"}</span>
@@ -468,7 +468,7 @@ function MenuAdmin({ menu, setMenu, toast }) {
               style={{
                 ...FONT, flexShrink: 0, borderRadius: 999, padding: "9px 15px", fontSize: 13, fontWeight: 800, cursor: "pointer",
                 border: `1px solid ${on ? "transparent" : W.lineSoft}`,
-                background: on ? `linear-gradient(135deg, ${W.goldLt}, ${W.gold})` : "rgba(255,255,255,.03)",
+                background: on ? `linear-gradient(135deg, ${W.goldLt}, ${W.gold})` : "rgba(22,36,26,.035)",
                 color: on ? "#2A1B08" : W.textSoft,
               }}
             >
