@@ -176,7 +176,15 @@ function ModeChoice({ table, onPick }) {
 /* ----------------------- 2. La carte ----------------------- */
 
 function MenuView({ menu, mode, table, cart, openItem, goCart, back }) {
-  const [cat, setCat] = useState(CATEGORIES[0].id);
+  // La carte client ne montre que les articles photographiés : un emoji au
+  // milieu d'une grille de photos casserait la promesse visuelle de la page.
+  const photoMenu = useMemo(() => menu.filter((m) => m.image && m.available !== false), [menu]);
+  const photoCategories = useMemo(
+    () => CATEGORIES.filter((c) => photoMenu.some((m) => m.category === c.id)),
+    [photoMenu]
+  );
+
+  const [cat, setCat] = useState(photoCategories[0]?.id);
   const refs = useRef({});
   const count = cart.reduce((s, l) => s + l.qty, 0);
   const total = cart.reduce((s, l) => s + l.total, 0);
@@ -206,7 +214,7 @@ function MenuView({ menu, mode, table, cart, openItem, goCart, back }) {
           borderBottom: `1px solid ${W.line}`,
         }}
       >
-        {CATEGORIES.map((c) => {
+        {photoCategories.map((c) => {
           const on = cat === c.id;
           return (
             <button
@@ -227,8 +235,8 @@ function MenuView({ menu, mode, table, cart, openItem, goCart, back }) {
       </nav>
 
       <div className="wd-view" style={{ maxWidth: 620, margin: "0 auto", padding: `8px 16px ${count ? 110 : 40}px` }}>
-        {CATEGORIES.map((c) => {
-          const items = menu.filter((m) => m.category === c.id && m.available !== false);
+        {photoCategories.map((c) => {
+          const items = photoMenu.filter((m) => m.category === c.id);
           if (!items.length) return null;
           return (
             <section
@@ -255,13 +263,7 @@ function MenuView({ menu, mode, table, cart, openItem, goCart, back }) {
                     style={{ ...glass(1), padding: 0, overflow: "hidden", cursor: "pointer", display: "flex", flexDirection: "column" }}
                   >
                     <div style={{ position: "relative", aspectRatio: "1 / 0.86", background: "rgba(198,154,99,.11)", flexShrink: 0 }}>
-                      {m.image ? (
-                        <img src={m.image} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                      ) : (
-                        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 42 }}>
-                          {m.emoji}
-                        </div>
-                      )}
+                      <img src={m.image} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                       {m.badge && (
                         <span
                           style={{
