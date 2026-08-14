@@ -201,7 +201,7 @@ function MenuView({ menu, mode, table, cart, openItem, goCart, back }) {
         <div style={{ position: "relative", maxWidth: 620, margin: "0 auto" }}>
           <div style={{ ...label(11), color: W.goldLt }}>Well Done</div>
           <h1 style={{ ...display(38), color: "#F7F3EA", marginTop: 12 }}>
-            SMASH BURGER,<br />FAIT MINUTE.
+            BIEN FAIT,<br />SI FRAIS.
           </h1>
           <p style={{ ...FONT, fontSize: 14.5, color: "rgba(247,243,234,.68)", marginTop: 14, lineHeight: 1.6, maxWidth: 420 }}>
             Smash burgers · Sauces maison · Frites cheddar bacon
