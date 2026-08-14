@@ -4,7 +4,7 @@ import { W, FONT, display, label, glass, goldText } from "./theme.js";
 import { Screen, Panel, Btn, Chip, Field, Sheet, Stat, PageHead, SectionLabel, Empty, Segmented, Dish } from "./ui.jsx";
 import { Logo } from "./Logo.jsx";
 import {
-  BRAND, TABLES, CATEGORIES, MODE_META, STATUS_META, DELIVERY_ZONES,
+  BRAND, TABLES, CATEGORIES, MODE_META, STATUS_META,
   readMenu, writeMenu, readCustomers, readActivity, readScans,
   advanceOrder, shiftEta, useOrders, ensureSeed,
 } from "./data.js";
@@ -41,7 +41,6 @@ const NAV = [
     group: "Clients",
     items: [
       { id: "crm", label: "Fichier clients", icon: "users" },
-      { id: "delivery", label: "Livraison", icon: "delivery" },
     ],
   },
   {
@@ -166,7 +165,6 @@ export default function Manager({ onExit, onKitchen, onClient }) {
             {tab === "billing" && <Billing orders={today} toast={toast} />}
             {tab === "menu" && <MenuAdmin menu={menu} setMenu={(m) => { setMenu(m); writeMenu(m); }} toast={toast} />}
             {tab === "crm" && <CRM />}
-            {tab === "delivery" && <Delivery orders={orders} />}
             {tab === "qr" && <QRTables toast={toast} />}
             {tab === "activity" && <Activity />}
           </div>
@@ -185,7 +183,7 @@ function Overview({ orders, all, onKitchen, pending }) {
   const converted = scans.filter((s) => s.order_id).length;
   const rate = scans.length ? Math.round((converted / scans.length) * 100) : 0;
 
-  const byMode = ["sur_place", "emporter", "livraison"].map((m) => {
+  const byMode = ["sur_place", "emporter"].map((m) => {
     const l = orders.filter((o) => o.mode === m);
     return { m, n: l.length, ca: l.reduce((s, o) => s + o.total, 0) };
   });
@@ -306,11 +304,10 @@ function OrderRow({ o, act, sync }) {
           </div>
         ))}
 
-        {(o.customer?.name || o.customer?.address) && (
+        {o.customer?.name && (
           <div style={{ ...FONT, fontSize: 12.5, color: W.textDim, marginTop: 10, lineHeight: 1.5 }}>
             {o.customer.name}
             {o.customer.phone ? ` · ${o.customer.phone}` : ""}
-            {o.customer.address ? ` · ${o.customer.address}, ${o.customer.city}` : ""}
           </div>
         )}
       </div>
@@ -667,7 +664,7 @@ function CRM() {
               <span>
                 <b style={{ ...FONT, fontSize: 14, color: W.text }}>{c.name}</b>
                 <span style={{ ...FONT, fontSize: 12.5, color: W.textDim, display: "block", marginTop: 3 }}>
-                  {[c.phone, c.email, c.city].filter(Boolean).join(" · ") || "—"}
+                  {[c.phone, c.email].filter(Boolean).join(" · ") || "—"}
                 </span>
               </span>
               <span style={{ textAlign: "right" }} translate="no">
@@ -684,54 +681,6 @@ function CRM() {
   );
 }
 
-/* ----------------------- Livraison ----------------------- */
-
-function Delivery({ orders }) {
-  const list = orders.filter((o) => o.mode === "livraison");
-  return (
-    <div>
-      <PageHead title="Livraison" sub="Zones desservies et minimum de commande" />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 12, marginBottom: 22 }}>
-        {DELIVERY_ZONES.map((z) => {
-          const n = list.filter((o) => o.zone === z.label).length;
-          return (
-            <Panel key={z.id} pad={17}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                <b style={{ ...display(17), color: W.text }}>{z.label}</b>
-                <Chip tone="gold"><span translate="no">min. {fmtEuro(z.min)}</span></Chip>
-              </div>
-              <div style={{ ...FONT, fontSize: 12.5, color: W.textSoft, marginTop: 10, lineHeight: 1.55 }}>
-                {z.cities.length ? z.cities.join(", ") : "Toute autre commune"}
-              </div>
-              <div style={{ ...FONT, fontSize: 12, color: W.textDim, marginTop: 10 }} translate="no">
-                {n} livraison(s) aujourd'hui
-              </div>
-            </Panel>
-          );
-        })}
-      </div>
-
-      <SectionLabel>Livraisons du jour</SectionLabel>
-      <Panel pad={0}>
-        {list.length === 0 ? (
-          <Empty icon={<Icon name="delivery" size={32} />} title="Aucune livraison aujourd'hui" />
-        ) : (
-          list.map((o, i) => (
-            <div key={o.id} style={{ padding: "14px 18px", borderBottom: i < list.length - 1 ? `1px solid ${W.lineSoft}` : "none" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-                <b style={{ ...FONT, fontSize: 14, color: W.text }} translate="no">{o.ref} · {o.customer?.name}</b>
-                <b style={{ ...FONT, fontSize: 14, color: W.gold }} translate="no">{fmtEuro(o.total)}</b>
-              </div>
-              <div style={{ ...FONT, fontSize: 12.5, color: W.textDim, marginTop: 4 }}>
-                {o.customer?.address}, {o.customer?.city} · {o.zone} · {o.customer?.phone}
-              </div>
-            </div>
-          ))
-        )}
-      </Panel>
-    </div>
-  );
-}
 
 /* ----------------------- Journal ----------------------- */
 

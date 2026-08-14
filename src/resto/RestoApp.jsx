@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { W, FONT, display, label, glass, goldText, brandPattern } from "./theme.js";
 import { Screen, Panel, Btn, Chip, Dish } from "./ui.jsx";
 import { Logo, Tagline, BurgerGlyph, LogoBadge } from "./Logo.jsx";
-import { BRAND, CATEGORIES, DELIVERY_ZONES, WELL_DONE_MENU, ensureSeed, useOrders } from "./data.js";
+import { BRAND, CATEGORIES, WELL_DONE_MENU, ensureSeed, useOrders } from "./data.js";
 import Manager, { tablePortalUrl } from "./Manager.jsx";
 import Kitchen from "./Kitchen.jsx";
 import RestoPortal from "./Client.jsx";
@@ -140,7 +140,7 @@ function Interfaces({ go }) {
     {
       id: "client", icon: "phone", title: "Vue client", tone: W.green,
       sub: "Sur le téléphone du client",
-      pts: ["Sur place, à emporter ou livraison", "Composition guidée : formule, sauces, suppléments", "Paiement et suivi temps réel"],
+      pts: ["Sur place ou à emporter", "Composition guidée : formule, sauces, suppléments", "Paiement et suivi temps réel"],
       cta: "Ouvrir le portail",
     },
     {
@@ -152,7 +152,7 @@ function Interfaces({ go }) {
     {
       id: "gestion", icon: "desktop", title: "Vue gestion", tone: W.gold,
       sub: "Sur l'ordinateur du gérant",
-      pts: ["Caisse, rapport Z, export CSV", "Carte, QR, fichier clients", "Zones de livraison et journal"],
+      pts: ["Caisse, rapport Z, export CSV", "Carte, QR, fichier clients", "Journal d'activité"],
       cta: "Ouvrir le tableau de bord",
     },
   ];
@@ -230,30 +230,6 @@ function MenuPreview() {
   );
 }
 
-function Zones() {
-  return (
-    <section style={{ maxWidth: 1120, margin: "0 auto", padding: "64px 20px 20px" }}>
-      <div style={{ textAlign: "center", marginBottom: 30 }}>
-        <div style={{ ...label(11), color: W.gold }}>Livraison</div>
-        <h2 style={{ ...display(30), color: W.text, marginTop: 14 }}>Minimum de commande par zone</h2>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 14 }}>
-        {DELIVERY_ZONES.map((z) => (
-          <Panel key={z.id} pad={20}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-              <b style={{ ...display(19), color: W.text }}>{z.label}</b>
-              <Chip tone="gold"><span translate="no">{z.min} €</span></Chip>
-            </div>
-            <div style={{ ...FONT, fontSize: 12.5, color: W.textSoft, marginTop: 12, lineHeight: 1.55 }}>
-              {z.cities.length ? z.cities.join(", ") : "Toute autre commune"}
-            </div>
-          </Panel>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function Footer({ go }) {
   return (
     <footer style={{ maxWidth: 1120, margin: "0 auto", padding: "60px 20px 70px" }}>
@@ -284,7 +260,6 @@ function Landing({ go }) {
       <Hero go={go} />
       <Interfaces go={go} />
       <MenuPreview />
-      <Zones />
       <Footer go={go} />
     </Screen>
   );

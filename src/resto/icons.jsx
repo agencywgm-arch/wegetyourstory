@@ -16,7 +16,6 @@ const PATHS = {
   // Modes de commande
   dinein: <><path d="M6 3v8a2.4 2.4 0 0 0 4.8 0V3" /><path d="M8.4 11v10" /><path d="M17 3c-1.7 1.2-2.4 3-2.4 5.2 0 1.7.9 2.8 2.4 3V21" /></>,
   takeaway: <><path d="M4.4 8h15.2l-1.3 12.1a1.4 1.4 0 0 1-1.4 1.2H7.1a1.4 1.4 0 0 1-1.4-1.2Z" /><path d="M3 4.6h18L19.6 8H4.4Z" /><path d="M9.6 12.4l1 5.2M14.4 12.4l-1 5.2" /></>,
-  delivery: <><circle cx="6" cy="17.4" r="2.8" /><circle cx="18.2" cy="17.4" r="2.8" /><path d="M8.8 17.4h6.6" /><path d="M15.4 17.4 13 7.6h-2.2" /><path d="M13.6 10.6h4l1.6 4.4" /></>,
 
   // Métier
   chart: <><path d="M3.4 20.6h17.2" /><path d="M6.6 20.6v-6.4M11 20.6V8M15.4 20.6v-4.2M19.8 20.6V4.6" /></>,
@@ -74,4 +73,4 @@ export function Icon({ name, size = 18, stroke = 1.7, color = "currentColor", st
 }
 
 /* Icône du mode de commande, pour ne pas disperser la correspondance. */
-export const MODE_ICON = { sur_place: "dinein", emporter: "takeaway", livraison: "delivery" };
+export const MODE_ICON = { sur_place: "dinein", emporter: "takeaway" };

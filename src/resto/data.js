@@ -30,7 +30,8 @@ import imgPhilyCrispyChicn from "./dishes/phily-crispy-chicn.jpg";
 /* ==========================================================================
    WELL DONE — données de l'établissement et carte pré-configurée.
    Reprise fidèle de la carte papier (smash burgers, chicken, hot dogs,
-   frites, add, desserts, boissons) et des zones de livraison.
+   frites, add, desserts, boissons). Prise de commande sur place et à
+   emporter uniquement.
    ========================================================================== */
 
 export const BRAND = {
@@ -333,21 +334,6 @@ export const WELL_DONE_MENU = [
   },
 ];
 
-/* ----------------------- Livraison ----------------------- */
-
-export const DELIVERY_ZONES = [
-  { id: "z1", label: "Zone 1", min: 20, cities: ["Livry-Gargan", "Sevran", "Aulnay-sous-Bois"] },
-  { id: "z2", label: "Zone 2", min: 30, cities: ["Bondy", "Les Pavillons-sous-Bois", "Clichy-sous-Bois", "Vaujours", "Tremblay-en-France", "Villeparisis"] },
-  { id: "z3", label: "Zone 3", min: 35, cities: ["Montfermeil", "Villemomble", "Villepinte", "Le Blanc-Mesnil", "Le Raincy"] },
-  { id: "hors", label: "Hors zone", min: 50, cities: [] },
-];
-
-export const ALL_CITIES = DELIVERY_ZONES.flatMap((z) => z.cities);
-
-export const zoneForCity = (city) =>
-  DELIVERY_ZONES.find((z) => z.cities.includes(city)) ||
-  DELIVERY_ZONES[DELIVERY_ZONES.length - 1];
-
 /* ----------------------- Codes promo ----------------------- */
 
 export const PROMO_CODES = [
@@ -434,7 +420,6 @@ export const upsertCustomer = (order) => {
       name: order.customer.name || "Client",
       phone: order.customer.phone || "",
       email: order.customer.email || "",
-      city: order.customer.city || "",
       orders: 1,
       spent: order.total,
       last: todayISO(),
@@ -457,7 +442,6 @@ export const STATUS_META = {
 export const MODE_META = {
   sur_place: { label: "Sur place", eta: 15 },
   emporter: { label: "À emporter", eta: 15 },
-  livraison: { label: "Livraison", eta: 35 },
 };
 
 let refCounter = 0;
@@ -542,7 +526,7 @@ export const seedOrders = () => {
     },
     {
       id: uid(), ref: "WD-002", ts: t - 3 * 60000, at: nowTime(), day: todayISO(),
-      mode: "livraison", table: null, status: "PENDING",
+      mode: "emporter", table: null, status: "PENDING",
       items: [
         line(find("b-welldone"), 2, ["Formule frites + boisson soft", "Ice Tea", "Ketchup"], 3),
         line(find("a-onion"), 1),
@@ -550,8 +534,8 @@ export const seedOrders = () => {
       ],
       subtotal: 33.0, discount: 0, total: 33.0,
       payment_method: "carte", paid: true,
-      customer: { name: "Karim B.", phone: "06 12 34 56 78", city: "Sevran", address: "12 rue des Lilas" },
-      eta_at: t + 32 * 60000,
+      customer: { name: "Karim B.", phone: "06 12 34 56 78" },
+      eta_at: t + 12 * 60000,
     },
   ];
 };
