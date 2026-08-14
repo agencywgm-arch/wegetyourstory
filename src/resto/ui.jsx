@@ -5,6 +5,32 @@ import { W, FONT, display, label, glass, brandPattern } from "./theme.js";
    Primitives de l'interface Well Done — surfaces sombres, verre, or.
    ========================================================================== */
 
+/* Vignette d'article : photo si l'enseigne en a fourni une, emoji sinon —
+   jamais les deux, pour ne pas mélanger deux langages visuels sur la carte. */
+export function Dish({ item, size = 46, radius = 14, fontSize = 24 }) {
+  return (
+    <span
+      style={{
+        width: size, height: size, borderRadius: radius, flexShrink: 0,
+        background: "rgba(198,154,99,.11)", border: `1px solid ${W.line}`,
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        overflow: "hidden", fontSize,
+      }}
+    >
+      {item.image ? (
+        <img
+          src={item.image}
+          alt=""
+          loading="lazy"
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      ) : (
+        item.emoji
+      )}
+    </span>
+  );
+}
+
 export function Screen({ children, tone = "dark", pad = true, style }) {
   const dark = tone === "dark";
   return (

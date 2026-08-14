@@ -45,14 +45,32 @@ moment — elles ne sont pas enfouies dans des onglets :
 
 ### La carte, pré-configurée
 
-Reprise fidèle de la carte papier : **29 articles** en 7 catégories.
+**43 articles** en 10 catégories : les 29 de la carte papier, complétés par 14
+articles repris de welldone-burger.com (Phily's, Trays, Salade, Chic'n Pop,
+Bahn Mi, Big Smash, Flamin Chic'N, Cup Dubai, Cookie Gourmet, Tiramisu…). Ces
+14 derniers n'ont pas de prix communiqué : une estimation par comparaison
+avec des articles voisins leur est appliquée, marquée `estimatedPrice: true`
+dans `data.js` et signalée par un badge **« Prix à valider »** dans l'onglet
+Carte du tableau de bord, jusqu'à confirmation.
 
-- **Smash Burger Angus Beef** — Well Done, Cheese, Smoky, Truffle, Phily
-  · formule frites + boisson soft **+ 3 €**
-- **Chicken Burger** — Chic'n, Avocado chic'n, Smoky chic'n, Pili pli · formule **+ 3,50 €**
+**22 articles sont illustrés d'une vraie photo produit** (`src/resto/dishes/`,
+fournies par l'enseigne) plutôt que d'un emoji — le composant `Dish`
+(`src/resto/ui.jsx`) bascule automatiquement sur la photo quand `item.image`
+est renseigné, sinon retombe sur l'emoji. Les deux langages visuels ne se
+mélangent jamais sur une même carte.
+
+- **Smash Burger Angus Beef** — Well Done, Cheese, Smoky Beef, Truffle, Phily,
+  Big Smash, Bahn Mi · formule frites + boisson soft **+ 3 €**
+- **Chicken Burger** — Chic'n, L'Avocado, Smoky chic'n, Pili pli, Flamin Chic'N
+  · formule **+ 3,50 €**
+- **Phily's** — cheesesteaks (Original, Truffle, Boursin, Crispy Chic'N) —
+  **à ne pas confondre avec le burger Phily**, produit distinct
+- **Nos Trays** — Tray Chic'N, Tray Well Done (frites + boisson incluses)
 - **Hot Dog** — New-yorkais, Spicy, Well Done · formule **+ 3,50 €**
-- **Nos frites**, **Add** (nuggets, mozza sticks, tenders, oignon rings…)
-- **Desserts**, **Boissons** (soft, prémium, Lemon Aid bio)
+- **Salade**, **Nos frites**, **Add** (nuggets, mozza sticks, tenders,
+  Chic'n Pop, oignon rings…)
+- **Desserts** (dont French Toast, Cookie Gourmet, Tiramisu, Cup Dubai),
+  **Boissons** (soft, prémium, Lemon Aid bio)
 
 Options composables portées par l'article lui-même : sauces incluses (2 au choix),
 sauces supplémentaires à 0,50 €, cheddar et bacon à 1 €, remarque libre pour la
