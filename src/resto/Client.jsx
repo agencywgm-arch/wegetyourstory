@@ -246,23 +246,62 @@ function MenuView({ menu, mode, table, cart, openItem, goCart, back }) {
                 </div>
               )}
 
-              <div style={{ display: "grid", gap: 10, marginTop: c.note ? 0 : 14 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 11, marginTop: c.note ? 0 : 14 }}>
                 {items.map((m) => (
-                  <Panel key={m.id} hover pad={16} onClick={() => openItem(m)} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                    <Dish item={m} />
-                    <span style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        <b style={{ ...display(17), color: W.text }}>{m.name}</b>
-                        {m.badge && <Chip tone="orange" style={{ fontSize: 10.5, padding: "2px 8px" }}>{m.badge}</Chip>}
-                      </span>
-                      {m.desc && (
-                        <span style={{ ...FONT, display: "block", fontSize: 12.8, color: W.textSoft, marginTop: 5, lineHeight: 1.5 }}>
-                          {m.desc}
+                  <div
+                    key={m.id}
+                    className="wd-hover"
+                    onClick={() => openItem(m)}
+                    style={{ ...glass(1), padding: 0, overflow: "hidden", cursor: "pointer", display: "flex", flexDirection: "column" }}
+                  >
+                    <div style={{ position: "relative", aspectRatio: "1 / 0.86", background: "rgba(198,154,99,.11)", flexShrink: 0 }}>
+                      {m.image ? (
+                        <img src={m.image} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      ) : (
+                        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 42 }}>
+                          {m.emoji}
+                        </div>
+                      )}
+                      {m.badge && (
+                        <span
+                          style={{
+                            ...FONT, position: "absolute", top: 8, left: 8, fontSize: 10, fontWeight: 800,
+                            padding: "3px 9px", borderRadius: 999, background: "rgba(10,26,13,.78)",
+                            color: W.orange, border: `1px solid ${W.orange}55`, backdropFilter: "blur(6px)",
+                          }}
+                        >
+                          {m.badge}
                         </span>
                       )}
-                    </span>
-                    <b style={{ ...display(17), ...goldText, flexShrink: 0 }} translate="no">{fmtEuro(m.price)}</b>
-                  </Panel>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openItem(m); }}
+                        aria-label={`Ajouter ${m.name}`}
+                        style={{
+                          ...FONT, position: "absolute", right: 9, bottom: -15, width: 32, height: 32, borderRadius: 999,
+                          background: `linear-gradient(135deg, ${W.goldLt}, ${W.gold})`, color: "#2A1B08",
+                          border: `2.5px solid ${W.surfaceUp}`, display: "inline-flex", alignItems: "center",
+                          justifyContent: "center", fontSize: 17, fontWeight: 900, cursor: "pointer", lineHeight: 1,
+                          boxShadow: "0 6px 16px rgba(0,0,0,.4)",
+                        }}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div style={{ padding: "13px 12px 14px", flex: 1 }}>
+                      <div style={{ ...display(14.5), color: W.text, lineHeight: 1.28 }}>{m.name}</div>
+                      {m.desc && (
+                        <div
+                          style={{
+                            ...FONT, fontSize: 11.5, color: W.textDim, marginTop: 4, lineHeight: 1.42,
+                            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+                          }}
+                        >
+                          {m.desc}
+                        </div>
+                      )}
+                      <div style={{ ...display(15.5), ...goldText, marginTop: 9 }} translate="no">{fmtEuro(m.price)}</div>
+                    </div>
+                  </div>
                 ))}
               </div>
             </section>
