@@ -33,7 +33,7 @@ function DemoBar({ screen, go }) {
     <div
       style={{
         position: "sticky", top: 0, zIndex: 200, height: 46,
-        background: "rgba(6,16,8,.92)", backdropFilter: "blur(22px)",
+        background: "rgba(255,255,255,.92)", backdropFilter: "blur(22px)",
         borderBottom: `1px solid ${W.line}`,
         display: "flex", alignItems: "center", gap: 10, padding: "0 12px",
         overflowX: "auto",
@@ -65,7 +65,7 @@ function DemoBar({ screen, go }) {
                 ...FONT, display: "inline-flex", alignItems: "center", gap: 7, whiteSpace: "nowrap",
                 borderRadius: 999, padding: "7px 13px", fontSize: 12.5, fontWeight: 800, cursor: "pointer",
                 border: `1px solid ${on ? "transparent" : W.lineSoft}`,
-                background: on ? `linear-gradient(135deg, ${W.goldLt}, ${W.gold})` : "rgba(255,255,255,.03)",
+                background: on ? `linear-gradient(135deg, ${W.goldLt}, ${W.gold})` : "rgba(22,36,26,.035)",
                 color: on ? "#2A1B08" : W.textSoft,
               }}
             >

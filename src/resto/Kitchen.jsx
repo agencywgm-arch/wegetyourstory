@@ -71,7 +71,7 @@ function Ticket({ o, onAdvance, onEta, col }) {
           <div key={l.key} style={{ display: "flex", gap: 12, padding: "9px 0", borderBottom: `1px solid ${W.lineSoft}` }}>
             <span
               style={{
-                ...display(17), color: W.forest, background: W.goldLt, borderRadius: 9,
+                ...display(17), color: W.ink, background: W.goldLt, borderRadius: 9,
                 minWidth: 32, height: 32, display: "inline-flex", alignItems: "center",
                 justifyContent: "center", flexShrink: 0,
               }}
@@ -135,7 +135,7 @@ function Ticket({ o, onAdvance, onEta, col }) {
 
 const etaBtn = {
   ...FONT, width: 46, height: 44, borderRadius: 14, flexShrink: 0,
-  border: `1px solid ${W.lineStrong}`, background: "rgba(255,255,255,.04)",
+  border: `1px solid ${W.lineStrong}`, background: "rgba(22,36,26,0.035)",
   color: W.textSoft, fontSize: 14, fontWeight: 800, cursor: "pointer",
 };
 
@@ -170,7 +170,7 @@ export default function Kitchen({ onExit }) {
       <header
         style={{
           position: "sticky", top: "var(--wd-top, 0px)", zIndex: 40,
-          background: "rgba(10,26,13,.82)", backdropFilter: "blur(20px)",
+          background: "rgba(255,255,255,.82)", backdropFilter: "blur(20px)",
           borderBottom: `1px solid ${W.line}`, padding: "13px 22px",
           display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap",
         }}

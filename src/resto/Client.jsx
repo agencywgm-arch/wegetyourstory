@@ -57,7 +57,7 @@ function Bar({ onBack, mode, table, right }) {
     <header
       style={{
         position: "sticky", top: "var(--wd-top, 0px)", zIndex: 60, padding: "12px 16px",
-        background: "rgba(10,26,13,.8)", backdropFilter: "blur(20px)",
+        background: "rgba(255,255,255,.82)", backdropFilter: "blur(20px)",
         borderBottom: `1px solid ${W.line}`, display: "flex", alignItems: "center", gap: 12,
       }}
     >
@@ -66,7 +66,7 @@ function Bar({ onBack, mode, table, right }) {
           onClick={onBack}
           aria-label="Retour"
           style={{
-            ...FONT, border: `1px solid ${W.lineSoft}`, background: "rgba(0,0,0,.3)", borderRadius: 999,
+            ...FONT, border: `1px solid ${W.lineSoft}`, background: "rgba(22,36,26,.04)", borderRadius: 999,
             width: 36, height: 36, fontSize: 16, cursor: "pointer", color: W.text, flexShrink: 0,
           }}
         >
@@ -210,7 +210,7 @@ function MenuView({ menu, mode, table, cart, openItem, goCart, back }) {
         className="wd-scroll"
         style={{
           position: "sticky", top: "calc(var(--wd-top, 0px) + 61px)", zIndex: 55, display: "flex", gap: 8, overflowX: "auto",
-          padding: "12px 16px", background: "rgba(10,26,13,.86)", backdropFilter: "blur(20px)",
+          padding: "12px 16px", background: "rgba(255,255,255,.88)", backdropFilter: "blur(20px)",
           borderBottom: `1px solid ${W.line}`,
         }}
       >
@@ -224,7 +224,7 @@ function MenuView({ menu, mode, table, cart, openItem, goCart, back }) {
                 ...FONT, flexShrink: 0, borderRadius: 999, padding: "9px 15px", fontSize: 13, fontWeight: 800,
                 cursor: "pointer", whiteSpace: "nowrap",
                 border: `1px solid ${on ? "transparent" : W.lineSoft}`,
-                background: on ? `linear-gradient(135deg, ${W.goldLt}, ${W.gold})` : "rgba(255,255,255,.03)",
+                background: on ? `linear-gradient(135deg, ${W.goldLt}, ${W.gold})` : "rgba(22,36,26,.035)",
                 color: on ? "#2A1B08" : W.textSoft,
               }}
             >
@@ -262,7 +262,7 @@ function MenuView({ menu, mode, table, cart, openItem, goCart, back }) {
                     onClick={() => openItem(m)}
                     style={{ ...glass(1), padding: 0, overflow: "hidden", cursor: "pointer", display: "flex", flexDirection: "column" }}
                   >
-                    <div style={{ position: "relative", aspectRatio: "1 / 0.86", background: "rgba(198,154,99,.11)", flexShrink: 0 }}>
+                    <div style={{ position: "relative", aspectRatio: "1 / 0.86", background: "rgba(169,129,58,.09)", flexShrink: 0 }}>
                       <img src={m.image} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                       {m.badge && (
                         <span
@@ -321,7 +321,7 @@ function MenuView({ menu, mode, table, cart, openItem, goCart, back }) {
           style={{
             position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 70,
             padding: "14px 16px calc(14px + env(safe-area-inset-bottom))",
-            background: "rgba(10,26,13,.9)", backdropFilter: "blur(20px)", borderTop: `1px solid ${W.line}`,
+            background: "rgba(255,255,255,.92)", backdropFilter: "blur(20px)", borderTop: `1px solid ${W.line}`,
           }}
         >
           <div style={{ maxWidth: 620, margin: "0 auto" }}>
@@ -406,7 +406,7 @@ function Composer({ item, onClose, onAdd }) {
                   style={{
                     ...FONT, borderRadius: 13, padding: "10px 14px", fontSize: 13.5, fontWeight: 700, cursor: "pointer",
                     border: `1px solid ${on ? W.green : W.lineSoft}`,
-                    background: on ? "rgba(76,164,53,.16)" : "rgba(255,255,255,.03)",
+                    background: on ? "rgba(76,164,53,.16)" : "rgba(22,36,26,.035)",
                     color: on ? W.greenLt : W.textSoft,
                     display: "inline-flex", alignItems: "center", gap: 7,
                   }}
@@ -680,7 +680,7 @@ function TrackView({ orderId, onNew }) {
             textAlign: "center",
             borderColor: ready ? "rgba(76,164,53,.55)" : W.line,
             background: ready
-              ? `linear-gradient(160deg, rgba(76,164,53,.24), rgba(15,36,19,.9))`
+              ? `linear-gradient(160deg, rgba(76,164,53,.22), rgba(255,255,255,.94))`
               : undefined,
           }}
         >
@@ -711,7 +711,7 @@ function TrackView({ orderId, onNew }) {
                 key={s}
                 style={{
                   flex: 1, height: 5, borderRadius: 99,
-                  background: i <= idx ? `linear-gradient(90deg, ${W.greenLt}, ${W.green})` : "rgba(255,255,255,.08)",
+                  background: i <= idx ? `linear-gradient(90deg, ${W.greenLt}, ${W.green})` : "rgba(22,36,26,.08)",
                 }}
               />
             ))}
@@ -722,7 +722,7 @@ function TrackView({ orderId, onNew }) {
                 style={{
                   width: 26, height: 26, borderRadius: 99, flexShrink: 0, fontSize: 11,
                   display: "inline-flex", alignItems: "center", justifyContent: "center",
-                  background: i <= idx ? W.green : "rgba(255,255,255,.06)",
+                  background: i <= idx ? W.green : "rgba(22,36,26,.07)",
                   color: i <= idx ? "#08210C" : W.textDim, fontWeight: 900,
                 }}
               >

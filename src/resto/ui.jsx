@@ -16,7 +16,7 @@ export function Dish({ item, size = 46, radius = 14, fontSize = 24 }) {
     <span
       style={{
         width: size, height: size, borderRadius: radius, flexShrink: 0,
-        background: "rgba(198,154,99,.11)", border: `1px solid ${W.line}`,
+        background: "rgba(169,129,58,.09)", border: `1px solid ${W.line}`,
         display: "inline-flex", alignItems: "center", justifyContent: "center",
         overflow: "hidden", color: W.gold,
       }}
@@ -35,43 +35,41 @@ export function Dish({ item, size = 46, radius = 14, fontSize = 24 }) {
   );
 }
 
-export function Screen({ children, tone = "dark", pad = true, style }) {
-  const dark = tone === "dark";
+/* Fond blanc avec un très léger voile vert et or en haut de page, et le
+   motif de la marque en filigrane — jamais assez marqué pour gêner la
+   lecture du texte ou des photos. */
+export function Screen({ children, pad = true, style }) {
   return (
     <div
       style={{
         minHeight: "100dvh",
-        background: dark ? W.void : W.cream,
-        color: dark ? W.text : W.ink,
+        background: W.void,
+        color: W.text,
         position: "relative",
         isolation: "isolate",
         ...style,
       }}
     >
-      {dark && (
-        <>
-          <div
-            aria-hidden
-            style={{
-              position: "fixed", inset: 0, zIndex: -2,
-              background: `radial-gradient(900px circle at 12% -8%, rgba(76,164,53,0.16), transparent 62%),
-                           radial-gradient(760px circle at 92% 4%, rgba(198,154,99,0.13), transparent 60%),
-                           linear-gradient(180deg, ${W.forest} 0%, ${W.void} 58%)`,
-            }}
-          />
-          <div
-            aria-hidden
-            style={{
-              position: "fixed", inset: 0, zIndex: -1,
-              backgroundImage: brandPattern(0.5),
-              backgroundSize: "180px 180px",
-              opacity: 0.55,
-              maskImage: "linear-gradient(180deg, rgba(0,0,0,.7), transparent 70%)",
-              WebkitMaskImage: "linear-gradient(180deg, rgba(0,0,0,.7), transparent 70%)",
-            }}
-          />
-        </>
-      )}
+      <div
+        aria-hidden
+        style={{
+          position: "fixed", inset: 0, zIndex: -2,
+          background: `radial-gradient(900px circle at 12% -8%, rgba(76,164,53,0.07), transparent 62%),
+                       radial-gradient(760px circle at 92% 4%, rgba(169,129,58,0.08), transparent 60%),
+                       ${W.void}`,
+        }}
+      />
+      <div
+        aria-hidden
+        style={{
+          position: "fixed", inset: 0, zIndex: -1,
+          backgroundImage: brandPattern(0.14),
+          backgroundSize: "180px 180px",
+          opacity: 0.7,
+          maskImage: "linear-gradient(180deg, rgba(0,0,0,.7), transparent 70%)",
+          WebkitMaskImage: "linear-gradient(180deg, rgba(0,0,0,.7), transparent 70%)",
+        }}
+      />
       <div style={{ position: "relative", padding: pad ? undefined : 0 }}>{children}</div>
     </div>
   );
@@ -92,10 +90,10 @@ export function Panel({ children, elev = 1, pad = 20, style, onClick, hover }) {
 const VARIANTS = {
   primary: { background: `linear-gradient(135deg, ${W.greenLt}, ${W.green})`, color: "#08210C", border: "1px solid transparent", shadow: "0 10px 26px rgba(76,164,53,.32)" },
   gold: { background: `linear-gradient(135deg, ${W.goldLt}, ${W.gold})`, color: "#2A1B08", border: "1px solid transparent", shadow: "0 10px 26px rgba(198,154,99,.28)" },
-  outline: { background: "rgba(255,255,255,0.03)", color: W.text, border: `1px solid ${W.lineStrong}`, shadow: "none" },
+  outline: { background: "rgba(22,36,26,0.035)", color: W.text, border: `1px solid ${W.lineStrong}`, shadow: "none" },
   ghost: { background: "transparent", color: W.textSoft, border: "1px solid transparent", shadow: "none" },
   danger: { background: `linear-gradient(135deg, #FF6B6B, ${W.danger})`, color: "#2A0808", border: "1px solid transparent", shadow: "0 10px 26px rgba(255,77,77,.3)" },
-  light: { background: W.text, color: W.forest, border: "1px solid transparent", shadow: "0 10px 26px rgba(0,0,0,.3)" },
+  light: { background: W.surface, color: W.text, border: `1px solid ${W.lineStrong}`, shadow: "0 8px 20px rgba(35,25,10,.1)" },
 };
 
 const SIZES = {
@@ -198,7 +196,7 @@ export function Field({ label: lb, value, onChange, type = "text", placeholder, 
         onChange={(e) => onChange(e.target.value)}
         style={{
           ...FONT, width: "100%", padding: "13px 16px", borderRadius: 14,
-          border: `1px solid ${W.lineSoft}`, background: "rgba(0,0,0,0.26)",
+          border: `1px solid ${W.lineSoft}`, background: "rgba(22,36,26,0.035)",
           fontSize: 15, color: W.text, outline: "none", resize: area ? "vertical" : undefined,
         }}
       />
@@ -215,7 +213,7 @@ export function Select({ label: lb, value, onChange, children, style }) {
         onChange={(e) => onChange(e.target.value)}
         style={{
           ...FONT, width: "100%", padding: "13px 16px", borderRadius: 14,
-          border: `1px solid ${W.lineSoft}`, background: "rgba(0,0,0,0.26)",
+          border: `1px solid ${W.lineSoft}`, background: "rgba(22,36,26,0.035)",
           fontSize: 15, color: W.text, outline: "none",
         }}
       >
@@ -230,7 +228,7 @@ export function Segmented({ options, value, onChange, full, style }) {
     <div
       style={{
         display: "inline-flex", padding: 4, gap: 4, borderRadius: 999,
-        background: "rgba(0,0,0,0.3)", border: `1px solid ${W.lineSoft}`,
+        background: "rgba(22,36,26,0.045)", border: `1px solid ${W.lineSoft}`,
         width: full ? "100%" : undefined, ...style,
       }}
     >
@@ -260,7 +258,7 @@ export function Segmented({ options, value, onChange, full, style }) {
 export function Stepper({ value, onChange, min = 1, max = 20 }) {
   const b = {
     ...FONT, width: 36, height: 36, borderRadius: 999,
-    border: `1px solid ${W.lineStrong}`, background: "rgba(255,255,255,.04)",
+    border: `1px solid ${W.lineStrong}`, background: "rgba(22,36,26,0.035)",
     fontSize: 18, fontWeight: 800, cursor: "pointer", color: W.text,
     display: "inline-flex", alignItems: "center", justifyContent: "center",
   };
@@ -316,7 +314,7 @@ export function Sheet({ title, sub, onClose, children, footer, maxWidth = 520 })
               onClick={onClose}
               aria-label="Fermer"
               style={{
-                ...FONT, border: `1px solid ${W.lineSoft}`, background: "rgba(0,0,0,.3)", borderRadius: 999,
+                ...FONT, border: `1px solid ${W.lineSoft}`, background: "rgba(22,36,26,0.055)", borderRadius: 999,
                 width: 34, height: 34, cursor: "pointer", fontSize: 15, color: W.textSoft, flexShrink: 0,
               }}
             >
@@ -326,7 +324,7 @@ export function Sheet({ title, sub, onClose, children, footer, maxWidth = 520 })
         </div>
         <div style={{ padding: "18px 22px", overflowY: "auto", flex: 1 }}>{children}</div>
         {footer && (
-          <div style={{ padding: "14px 22px calc(18px + env(safe-area-inset-bottom))", borderTop: `1px solid ${W.lineSoft}`, flexShrink: 0, background: "rgba(0,0,0,.22)" }}>
+          <div style={{ padding: "14px 22px calc(18px + env(safe-area-inset-bottom))", borderTop: `1px solid ${W.lineSoft}`, flexShrink: 0, background: "rgba(22,36,26,0.03)" }}>
             {footer}
           </div>
         )}
@@ -357,13 +355,13 @@ export function WDStyles() {
       .wd-btn:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.07) }
       .wd-btn:active:not(:disabled) { transform: scale(.975) }
       .wd-hover { transition: transform .2s cubic-bezier(.2,.9,.3,1), border-color .2s ease, box-shadow .2s ease }
-      .wd-hover:hover { transform: translateY(-3px); border-color: rgba(198,154,99,.45); box-shadow: 0 22px 50px rgba(0,0,0,.42) }
+      .wd-hover:hover { transform: translateY(-3px); border-color: rgba(169,129,58,.45); box-shadow: 0 22px 46px rgba(35,25,10,.16) }
       .wd-scroll::-webkit-scrollbar { height: 6px; width: 6px }
       .wd-scroll::-webkit-scrollbar-thumb { background: rgba(198,154,99,.3); border-radius: 99px }
       .wd-scroll::-webkit-scrollbar-track { background: transparent }
       ::selection { background: rgba(198,154,99,.35) }
-      input::placeholder, textarea::placeholder { color: rgba(245,242,234,.3) }
-      select option { background: #16351A; color: #F5F2EA }
+      input::placeholder, textarea::placeholder { color: rgba(22,36,26,.34) }
+      select option { background: #FFFFFF; color: #16241A }
       @media (min-width: 700px) {
         .wd-sheet-wrap { align-items: center; padding: 24px }
         .wd-sheet { border-radius: 26px !important }

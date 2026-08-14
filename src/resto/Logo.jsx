@@ -93,7 +93,7 @@ export function LogoBadge({ size = 56 }) {
         width: size,
         height: size,
         borderRadius: 999,
-        background: W.forest,
+        background: "#16351A",
         border: `1px solid ${W.lineStrong}`,
         display: "flex",
         flexDirection: "column",
@@ -105,11 +105,11 @@ export function LogoBadge({ size = 56 }) {
       translate="no"
       aria-label="Well Done"
     >
-      <span style={{ ...FONT, fontSize: size * 0.2, fontWeight: 700, color: W.text, letterSpacing: size * 0.02, lineHeight: 1 }}>
+      <span style={{ ...FONT, fontSize: size * 0.2, fontWeight: 700, color: "#F7F3EA", letterSpacing: size * 0.02, lineHeight: 1 }}>
         WELL
       </span>
-      <BurgerGlyph size={size * 0.3} color={W.text} stroke={8} />
-      <span style={{ ...FONT, fontSize: size * 0.2, fontWeight: 700, color: W.text, letterSpacing: size * 0.02, lineHeight: 1 }}>
+      <BurgerGlyph size={size * 0.3} color="#F7F3EA" stroke={8} />
+      <span style={{ ...FONT, fontSize: size * 0.2, fontWeight: 700, color: "#F7F3EA", letterSpacing: size * 0.02, lineHeight: 1 }}>
         DONE
       </span>
     </div>
