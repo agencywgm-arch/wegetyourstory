@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { W, FONT, display, label, glass, goldText } from "./theme.js";
+import { W, FONT, display, label, glass, goldText, brandPattern } from "./theme.js";
 import { Screen, Panel, Btn, Chip, Field, Sheet, Stepper, SectionLabel, Empty, Dish } from "./ui.jsx";
 import { Logo, Tagline, BurgerGlyph } from "./Logo.jsx";
 import {
@@ -184,11 +184,31 @@ function MenuView({ menu, mode, table, cart, openItem, goCart, back }) {
     <Screen>
       <Bar onBack={back} mode={mode} table={table} />
 
+      <div style={{ position: "relative", overflow: "hidden", padding: "40px 20px 28px" }}>
+        <div
+          aria-hidden
+          style={{
+            position: "absolute", inset: 0,
+            backgroundImage: brandPattern(0.13),
+            backgroundSize: "160px 160px",
+            maskImage: "linear-gradient(180deg, rgba(0,0,0,.65), transparent 88%)",
+            WebkitMaskImage: "linear-gradient(180deg, rgba(0,0,0,.65), transparent 88%)",
+          }}
+        />
+        <div style={{ position: "relative", maxWidth: 620, margin: "0 auto" }}>
+          <div style={{ ...label(11), color: W.gold }}>La carte</div>
+          <h1 style={{ ...display(32), color: W.text, marginTop: 10 }}>Nos spécialités</h1>
+          <p style={{ ...FONT, fontSize: 14, color: W.textSoft, marginTop: 10, lineHeight: 1.55, maxWidth: 420 }}>
+            Smash burgers, sauces maison et suppléments à la carte — tout est préparé à la commande.
+          </p>
+        </div>
+      </div>
+
       <nav
         className="wd-scroll"
         style={{
-          position: "sticky", top: "calc(var(--wd-top, 0px) + 61px)", zIndex: 55, display: "flex", gap: 8, overflowX: "auto",
-          padding: "12px 16px", background: "rgba(255,255,255,.88)", backdropFilter: "blur(20px)",
+          position: "sticky", top: "calc(var(--wd-top, 0px) + 61px)", zIndex: 55, display: "flex", gap: 7, overflowX: "auto",
+          padding: "8px 16px", background: "rgba(255,255,255,.88)", backdropFilter: "blur(20px)",
           borderBottom: `1px solid ${W.line}`,
         }}
       >
@@ -199,14 +219,14 @@ function MenuView({ menu, mode, table, cart, openItem, goCart, back }) {
               key={c.id}
               onClick={() => refs.current[c.id]?.scrollIntoView({ behavior: "smooth", block: "start" })}
               style={{
-                ...FONT, flexShrink: 0, borderRadius: 999, padding: "9px 15px", fontSize: 13, fontWeight: 800,
+                ...FONT, flexShrink: 0, borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 800,
                 cursor: "pointer", whiteSpace: "nowrap",
                 border: `1px solid ${on ? "transparent" : W.lineSoft}`,
                 background: on ? `linear-gradient(135deg, ${W.goldLt}, ${W.gold})` : "rgba(22,36,26,.035)",
                 color: on ? "#2A1B08" : W.textSoft,
               }}
             >
-              <Icon name={c.icon} size={14} /> {c.label}
+              <Icon name={c.icon} size={12} /> {c.label}
             </button>
           );
         })}
@@ -221,7 +241,7 @@ function MenuView({ menu, mode, table, cart, openItem, goCart, back }) {
               key={c.id}
               data-cat={c.id}
               ref={(el) => (refs.current[c.id] = el)}
-              style={{ scrollMarginTop: "calc(var(--wd-top, 0px) + 124px)", paddingTop: 26 }}
+              style={{ scrollMarginTop: "calc(var(--wd-top, 0px) + 108px)", paddingTop: 26 }}
             >
               <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4 }}>
                 <h2 style={{ ...display(23), color: W.text, margin: 0, display: "flex", alignItems: "center", gap: 10 }}><Icon name={c.icon} size={20} color={W.gold} /> {c.label}</h2>
