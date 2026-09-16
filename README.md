@@ -184,3 +184,10 @@ Conservé en parallèle. À chaque push sur `main`, le workflow
 | `/r/well-done/t/{table}` | Portail client Well Done (cible des QR de table) |
 | `/hotel` | Démo hôtelière → dashboard réception |
 | `/r/demo-hotel/t/{chambre}` | Portail chambre client |
+
+## Autres projets du dépôt
+
+- [`wgm-video/`](wgm-video/) — projet Next.js indépendant : serveur MCP distant
+  qui connecte Claude à fal.ai pour la génération de vidéo. Stack, dépendances
+  et déploiement Vercel séparés de l'app Wegemo ci-dessus (voir son propre
+  README).
